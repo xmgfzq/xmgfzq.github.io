@@ -82,15 +82,15 @@
 </head>
 <body>
 
-    <h1>桐桐宝宝亲亲 😘😘</h1>
-    <div id="click-tip">✨ 点击屏幕会出现爱心哦！ ✨</div>
+    <h1>桐桐宝宝亲亲 💖💖</h1>
+    <div id="click-tip">✨ 点击屏幕亲亲！ ✨</div>
 
     <script>
         // 点击爱心效果
         document.addEventListener("click", function(e) {
             let heart = document.createElement("div");
             heart.className = "heart";
-            heart.innerText = "😘😘";
+            heart.innerText = "😘";
             heart.style.left = e.clientX + "px";
             heart.style.top = e.clientY + "px";
             document.body.appendChild(heart);
