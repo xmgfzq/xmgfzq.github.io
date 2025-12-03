@@ -1,10 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>我的网站</title>
+    <meta charset="UTF-8" />
+    <title>欢迎桐桐宝宝</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            background: linear-gradient(135deg, #ffb7d5, #ffd4e3);
+            font-family: "微软雅黑", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* 中间标题 */
+        h1 {
+            font-size: 60px;
+            color: white;
+            text-shadow: 0 0 15px #ff5fa2, 0 0 30px #ff93c9;
+            animation: glow 2s ease-in-out infinite alternate;
+            z-index: 2;
+            user-select: none;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ff5fa2; }
+            to { text-shadow: 0 0 30px #ff5fa2, 0 0 60px #ff93c9; }
+        }
+
+        /* 小提示气泡 */
+        #click-tip {
+            position: absolute;
+            bottom: 40px;
+            color: white;
+            font-size: 20px;
+            animation: float 2s infinite ease-in-out;
+            user-select: none;
+            z-index: 2;
+        }
+
+        @keyframes float {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* 点击出现的爱心 */
+        .heart {
+            position: fixed;
+            color: #ff5fa2;
+            font-size: 24px;
+            pointer-events: none;
+            animation: fly 1s linear forwards;
+        }
+
+        @keyframes fly {
+            0%   { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.8); opacity: 0; }
+        }
+
+        /* 漂浮的光点 */
+        .bubble {
+            position: absolute;
+            bottom: -50px;
+            width: 15px;
+            height: 15px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            animation: bubble 6s infinite ease-in-out;
+        }
+
+        @keyframes bubble {
+            0%   { transform: translateY(0) scale(0.6); opacity: 0.8; }
+            100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
+        }
+    </style>
 </head>
 <body>
-    <h1>网站成功运行！</h1>
+
+    <h1>欢迎桐桐宝宝 💖</h1>
+    <div id="click-tip">✨ 点击屏幕会出现爱心哦！ ✨</div>
+
+    <script>
+        // 点击爱心效果
+        document.addEventListener("click", function(e) {
+            let heart = document.createElement("div");
+            heart.className = "heart";
+            heart.innerText = "💗";
+            heart.style.left = e.clientX + "px";
+            heart.style.top = e.clientY + "px";
+            document.body.appendChild(heart);
+
+            setTimeout(() => heart.remove(), 1000);
+        });
+
+        // 生成漂浮光点
+        function createBubble() {
+            let bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.style.left = Math.random() * 100 + "vw";
+            bubble.style.animationDuration = 4 + Math.random() * 6 + "s";
+            bubble.style.opacity = Math.random();
+
+            document.body.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 10000);
+        }
+
+        setInterval(createBubble, 400);
+    </script>
+
 </body>
 </html>
