@@ -18,7 +18,7 @@
             --ok: #42d392;
             --shadow: 0 10px 30px rgba(0, 0, 0, .35);
             --radius: 16px;
-            --btnh: 46px
+            --btnh: 46px;
         }
 
         * {
@@ -34,28 +34,15 @@
             overflow: hidden;
         }
 
+        /* ====== 上下分栏：面板在上，画布在下（不再左右分栏） ====== */
         .app {
             height: 100dvh;
-            display: grid;
-            grid-template-columns: 360px 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 12px;
             padding: 12px;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom))
-        }
-
-        @media (max-width:980px) {
-            .app {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr
-            }
-
-            .side {
-                order: 2
-            }
-
-            .stage {
-                order: 1
-            }
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            min-height: 0;
         }
 
         .card {
@@ -66,10 +53,24 @@
             overflow: hidden
         }
 
+        /* 顶部面板：限制高度，内容内部滚动 */
         .side {
             display: flex;
             flex-direction: column;
-            min-height: 0
+            min-height: 0;
+            max-height: 24dvh;
+        }
+
+        @media (max-height:720px) {
+            .side {
+                max-height: 24dvh;
+            }
+        }
+
+        @media (max-width:980px) {
+            .side {
+                max-height: 24dvh;
+            }
         }
 
         .header {
@@ -112,7 +113,10 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            min-height: 0
+            min-height: 0;
+            overflow: auto;
+            /* 顶部面板内部滚动 */
+            padding-bottom: 14px;
         }
 
         .row {
@@ -301,10 +305,12 @@
             white-space: nowrap
         }
 
+        /* 底部画布区 */
         .stage {
             display: flex;
             flex-direction: column;
             min-height: 0;
+            flex: 1 1 auto;
             position: relative
         }
 
@@ -341,52 +347,9 @@
             touch-action: none
         }
 
+        /* 不再使用 bottomBar */
         .bottomBar {
-            display: none;
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
-            background: linear-gradient(180deg, rgba(10, 12, 16, .0), rgba(10, 12, 16, .92) 40%, rgba(10, 12, 16, .98));
-            border-top: 1px solid rgba(255, 255, 255, .08);
-            gap: 10px;
-            z-index: 20
-        }
-
-        @media (max-width:980px) {
-            body {
-                overflow: auto
-            }
-
-            .app {
-                height: auto;
-                min-height: 100dvh;
-                overflow: visible;
-                padding-bottom: 92px
-            }
-
-            .bottomBar {
-                display: flex
-            }
-
-            .stageMain {
-                height: 60vh
-            }
-        }
-
-        .bbRow {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
-            gap: 10px;
-            width: 100%
-        }
-
-        .bbRow2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            width: 100%
+            display: none !important;
         }
 
         .pill {
@@ -470,6 +433,111 @@
             color: #d7dcf0;
             background: rgba(255, 255, 255, .06)
         }
+
+        /* ====== 悬浮按钮（可收起，默认展开） ====== */
+        .fab {
+            position: fixed;
+            right: 12px;
+            bottom: calc(12px + env(safe-area-inset-bottom));
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: none;
+            /* 外层不吃事件，里面按钮再开 */
+        }
+
+        .fab * {
+            pointer-events: auto;
+        }
+
+        .fabPanel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+            transform-origin: bottom right;
+            transition: transform .18s ease, opacity .18s ease;
+        }
+
+        .fab.collapsed .fabPanel {
+            transform: translateY(10px) scale(.98);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .fabMain {
+            height: 52px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .14);
+            background: rgba(18, 20, 27, .92);
+            color: var(--text);
+            box-shadow: var(--shadow);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 800;
+            letter-spacing: .2px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fabMain:active {
+            transform: translateY(1px)
+        }
+
+        .fabBtn {
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .14);
+            background: rgba(12, 14, 20, .88);
+            color: var(--text);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .30);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .fabBtn.primary {
+            background: rgba(122, 162, 255, .18);
+            border-color: rgba(122, 162, 255, .35)
+        }
+
+        .fabBtn.ok {
+            background: rgba(66, 211, 146, .16);
+            border-color: rgba(66, 211, 146, .30)
+        }
+
+        .fabBtn.danger {
+            background: rgba(255, 93, 93, .14);
+            border-color: rgba(255, 93, 93, .25)
+        }
+
+        /* 导出列表项里的 checkbox */
+        .checkRow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .checkRow input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
     </style>
 </head>
 
@@ -548,6 +616,11 @@
                     <button class="btn small" id="zoomInBtn" type="button">放大</button>
                 </div>
 
+                <div class="grid2">
+                    <button class="btn small" id="exportBtn" type="button">导出</button>
+                    <button class="btn small" id="bulkBtn" type="button">一键完成色号</button>
+                </div>
+
                 <div class="toggle">
                     <input id="showCode" type="checkbox" checked>
                     <div style="display:flex; flex-direction:column; gap:2px">
@@ -612,19 +685,22 @@
         </main>
     </div>
 
-    <div class="bottomBar">
-        <div class="bbRow">
-            <button class="btn small" id="mPrev" type="button">上一格</button>
-            <button class="btn small primary" id="mNext" type="button">下一格</button>
-            <button class="btn small ok" id="mDone" type="button">完成</button>
-            <button class="btn small danger" id="mUndo" type="button">撤销</button>
+    <!-- 悬浮操作（默认展开，可收起） -->
+    <div class="fab" id="fab">
+        <div class="fabPanel" id="fabPanel">
+            <button class="fabBtn primary" id="fabPick" type="button">🎨 选颜色</button>
+            <button class="fabBtn" id="fabFit" type="button">🧲 适配</button>
+            <button class="fabBtn" id="fabPrev" type="button">⬅️ 上一格</button>
+            <button class="fabBtn primary" id="fabNext" type="button">➡️ 下一格</button>
+            <button class="fabBtn ok" id="fabDone" type="button">✅ 完成此格</button>
+            <button class="fabBtn danger" id="fabUndo" type="button">↩️ 撤销</button>
+            <button class="fabBtn ok" id="fabBulk" type="button">⚡ 一键完成色号</button>
+            <button class="fabBtn" id="fabExport" type="button">📦 导出</button>
         </div>
-        <div class="bbRow2">
-            <button class="btn small" id="mPickColor" type="button">选颜色</button>
-            <button class="btn small" id="mFit" type="button">适配屏幕</button>
-        </div>
+        <button class="fabMain" id="fabMain" type="button">≡ 操作面板</button>
     </div>
 
+    <!-- 裁剪 -->
     <div class="overlay" id="cropOverlay">
         <div class="modal card">
             <div class="modalHead">
@@ -646,6 +722,7 @@
         </div>
     </div>
 
+    <!-- 选颜色 -->
     <div class="overlay" id="pickOverlay">
         <div class="modal card" style="width:min(720px,96vw)">
             <div class="modalHead">
@@ -662,6 +739,7 @@
         </div>
     </div>
 
+    <!-- 手动改色 -->
     <div class="overlay" id="editOverlay">
         <div class="modal card" style="width:min(720px,96vw)">
             <div class="modalHead">
@@ -675,6 +753,70 @@
                 <div class="hint">用于修正“颜色识别”误判：先点选一个格子，再在这里选正确色号。</div>
                 <input id="editSearch" type="text" placeholder="搜索色号（例如 A1）">
                 <div class="list" id="editList" style="max-height:55vh"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 一键完成指定色号 -->
+    <div class="overlay" id="bulkOverlay">
+        <div class="modal card" style="width:min(720px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>一键完成某个色号</b>
+                    <small>选择后：该色所有未完成格子都会标记完成</small>
+                </div>
+                <button class="btn small" id="bulkClose" type="button">关闭</button>
+            </div>
+            <div class="modalBody" style="min-height:0">
+                <input id="bulkSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）">
+                <div class="list" id="bulkList" style="max-height:60vh"></div>
+                <div class="hint">提示：可用“撤销完成”逐颗撤销（批量会加入完成记录栈）。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出 -->
+    <div class="overlay" id="exportOverlay">
+        <div class="modal card" style="width:min(860px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>导出</b>
+                    <small>导出图纸 / 色号统计 / PNG / JSON，并可勾选“不导出某些色号”</small>
+                </div>
+                <button class="btn small" id="exportClose" type="button">关闭</button>
+            </div>
+
+            <div class="modalBody" style="min-height:0">
+                <div class="grid2">
+                    <div>
+                        <label>搜索色号（勾选列表用）</label>
+                        <input id="exportSearch" type="text" placeholder="例如 A1 / C20 / M15">
+                    </div>
+                    <div class="toggle" style="margin:0">
+                        <input id="exportBlankExcluded" type="checkbox" checked>
+                        <div style="display:flex; flex-direction:column; gap:2px">
+                            <b style="font-size:13px">图纸里将未导出的色号留空</b>
+                            <span
+                                style="font-size:12px; color:var(--muted)">不勾选则图纸仍保留这些色号，仅统计不导出</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid2">
+                    <button class="btn small" id="exportSelectAll" type="button">全选</button>
+                    <button class="btn small" id="exportSelectNone" type="button">全不选</button>
+                </div>
+
+                <div class="hint">勾选 = 允许导出；不勾选 = 不导出该色号（统计/图纸/PNG/JSON都会按此设置处理）。</div>
+
+                <div class="list" id="exportList" style="max-height:36vh"></div>
+            </div>
+
+            <div class="modalFoot">
+                <button class="btn" id="exportGridCSV" type="button">导出图纸 CSV</button>
+                <button class="btn" id="exportStatsCSV" type="button">导出统计 CSV</button>
+                <button class="btn" id="exportJSON" type="button">导出 JSON</button>
+                <button class="btn primary" id="exportPNG" type="button">导出 PNG</button>
             </div>
         </div>
     </div>
@@ -877,7 +1019,7 @@
             ]
         );
 
-        // 这里把 palette 做一次“统一格式化”：name 大写、color 去掉 #、转小写
+        // 统一格式化：name 大写、color 去掉 #、转小写
         function normalizePalette(arr) {
             return (arr || []).map(p => ({
                 name: String(p.name || '').trim().toUpperCase(),
@@ -886,14 +1028,10 @@
         }
 
         const MARD_PALETTE = normalizePalette(allPalettes.get("mard"));
-
-        /**********************
-         * 2) 默认允许色号（不上传 sehao.csv 时，就用 palette 里全部色号）
-         **********************/
         const DEFAULT_ALLOWED_CODES = MARD_PALETTE.map(p => p.name);
 
         /**********************
-         * 3) State
+         * State
          **********************/
         const state = {
             gridW: 0,
@@ -904,21 +1042,21 @@
             codeToHex: new Map(),   // palette map
             activeCode: null,
             activeTarget: null,     // {x,y}
-            history: [],            // prev positions
-            done: new Set(),        // completed cells
-            doneHistory: [],        // completed stack (for undo)
+            history: [],
+            done: new Set(),
+            doneHistory: [],
             lastPickedCell: null,
             onlyActiveColor: false,
             showCode: true,
             allowedSet: null,
-            allowedList: null,      // custom allowed list loaded from file
+            allowedList: null,
             isReady: false,
         };
 
         const view = { zoom: 1, panX: 0, panY: 0, baseCell: 18 };
 
         /**********************
-         * 4) Elements
+         * Elements
          **********************/
         const el = {
             imgFile: document.getElementById('imgFile'),
@@ -934,6 +1072,8 @@
             resetViewBtn: document.getElementById('resetViewBtn'),
             zoomInBtn: document.getElementById('zoomInBtn'),
             zoomOutBtn: document.getElementById('zoomOutBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            bulkBtn: document.getElementById('bulkBtn'),
 
             showCode: document.getElementById('showCode'),
             onlyActiveColor: document.getElementById('onlyActiveColor'),
@@ -956,14 +1096,6 @@
             view: document.getElementById('view'),
             editCellBtn: document.getElementById('editCellBtn'),
 
-            // mobile
-            mPrev: document.getElementById('mPrev'),
-            mNext: document.getElementById('mNext'),
-            mDone: document.getElementById('mDone'),
-            mUndo: document.getElementById('mUndo'),
-            mPickColor: document.getElementById('mPickColor'),
-            mFit: document.getElementById('mFit'),
-
             // crop
             cropOverlay: document.getElementById('cropOverlay'),
             cropCanvas: document.getElementById('cropCanvas'),
@@ -971,22 +1103,53 @@
             cropSkip: document.getElementById('cropSkip'),
             cropApply: document.getElementById('cropApply'),
 
-            // pick overlay
+            // pick
             pickOverlay: document.getElementById('pickOverlay'),
             pickClose: document.getElementById('pickClose'),
             pickSearch: document.getElementById('pickSearch'),
             pickList: document.getElementById('pickList'),
 
-            // edit overlay
+            // edit
             editOverlay: document.getElementById('editOverlay'),
             editClose: document.getElementById('editClose'),
             editSearch: document.getElementById('editSearch'),
             editList: document.getElementById('editList'),
             editInfo: document.getElementById('editInfo'),
+
+            // bulk
+            bulkOverlay: document.getElementById('bulkOverlay'),
+            bulkClose: document.getElementById('bulkClose'),
+            bulkSearch: document.getElementById('bulkSearch'),
+            bulkList: document.getElementById('bulkList'),
+
+            // export
+            exportOverlay: document.getElementById('exportOverlay'),
+            exportClose: document.getElementById('exportClose'),
+            exportSearch: document.getElementById('exportSearch'),
+            exportList: document.getElementById('exportList'),
+            exportBlankExcluded: document.getElementById('exportBlankExcluded'),
+            exportSelectAll: document.getElementById('exportSelectAll'),
+            exportSelectNone: document.getElementById('exportSelectNone'),
+            exportGridCSV: document.getElementById('exportGridCSV'),
+            exportStatsCSV: document.getElementById('exportStatsCSV'),
+            exportJSON: document.getElementById('exportJSON'),
+            exportPNG: document.getElementById('exportPNG'),
+
+            // fab
+            fab: document.getElementById('fab'),
+            fabMain: document.getElementById('fabMain'),
+            fabPick: document.getElementById('fabPick'),
+            fabFit: document.getElementById('fabFit'),
+            fabPrev: document.getElementById('fabPrev'),
+            fabNext: document.getElementById('fabNext'),
+            fabDone: document.getElementById('fabDone'),
+            fabUndo: document.getElementById('fabUndo'),
+            fabBulk: document.getElementById('fabBulk'),
+            fabExport: document.getElementById('fabExport'),
         };
 
         /**********************
-         * 5) Utils
+         * Utils
          **********************/
         function clamp(v, min, max) { return Math.max(min, Math.min(max, v)) }
         function hexToRgb(hex) {
@@ -1010,8 +1173,27 @@
         function openOverlay(node) { node.style.display = 'flex' }
         function closeOverlay(node) { node.style.display = 'none' }
 
+        function timeStamp() {
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+        }
+
+        function downloadBlob(filename, blob) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+        function downloadText(filename, text, mime) {
+            downloadBlob(filename, new Blob([text], { type: mime || 'text/plain;charset=utf-8' }));
+        }
+
         /**********************
-         * 6) Palette maps + allowed list
+         * Palette maps + allowed list
          **********************/
         function rebuildPaletteMaps() {
             state.codeToHex.clear();
@@ -1037,7 +1219,7 @@
         }
 
         /**********************
-         * 7) CSV mode: parse code grid
+         * CSV mode: parse code grid
          **********************/
         function parseCodeCSV(text) {
             const lines = text.replace(/\r/g, '\n').split('\n').map(s => s.trim()).filter(Boolean);
@@ -1092,7 +1274,7 @@
         }
 
         /**********************
-         * 8) Crop (image import)
+         * Crop (image import)
          **********************/
         const crop = {
             img: null,
@@ -1258,7 +1440,7 @@
         }
 
         /**********************
-         * 9) Image mode (quantize to nearest Mard) + maxColors limit
+         * Image mode (quantize to nearest Mard) + maxColors limit
          **********************/
         function applyMaxColorsLimit(W, H, cells, usedColors, counts, maxN) {
             if (!maxN || maxN < 1) return { cells, usedColors, counts };
@@ -1427,7 +1609,7 @@
         }
 
         /**********************
-         * 10) UI sync + color lists
+         * UI sync + color lists
          **********************/
         function syncUIAfterBuild() {
             state.showCode = el.showCode.checked;
@@ -1448,20 +1630,22 @@
                 const item = document.createElement('div');
                 item.className = 'colorItem' + (u.code === state.activeCode ? ' active' : '');
                 item.innerHTML = `
-      <div class="ciLeft">
-        <div class="sw" style="background:#${u.hex}"></div>
-        <div class="ciText">
-          <b>${u.code}</b>
-          <small>#${u.hex}</small>
-        </div>
-      </div>
-      <div class="ciRight">${count} 颗</div>
-    `;
+          <div class="ciLeft">
+            <div class="sw" style="background:#${u.hex}"></div>
+            <div class="ciText">
+              <b>${u.code}</b>
+              <small>#${u.hex}</small>
+            </div>
+          </div>
+          <div class="ciRight">${count} 颗</div>
+        `;
                 item.addEventListener('click', () => setActiveColor(u.code));
                 el.colorList.appendChild(item);
             }
             refreshPickList();
             refreshEditList();
+            refreshBulkList();
+            refreshExportList();
         }
 
         function refreshPickList() {
@@ -1473,15 +1657,15 @@
                 const item = document.createElement('div');
                 item.className = 'colorItem' + (u.code === state.activeCode ? ' active' : '');
                 item.innerHTML = `
-      <div class="ciLeft">
-        <div class="sw" style="background:#${u.hex}"></div>
-        <div class="ciText">
-          <b>${u.code}</b>
-          <small>#${u.hex}</small>
-        </div>
-      </div>
-      <div class="ciRight">${count} 颗</div>
-    `;
+          <div class="ciLeft">
+            <div class="sw" style="background:#${u.hex}"></div>
+            <div class="ciText">
+              <b>${u.code}</b>
+              <small>#${u.hex}</small>
+            </div>
+          </div>
+          <div class="ciRight">${count} 颗</div>
+        `;
                 item.addEventListener('click', () => { setActiveColor(u.code); closeOverlay(el.pickOverlay); });
                 el.pickList.appendChild(item);
             }
@@ -1496,15 +1680,15 @@
                 const item = document.createElement('div');
                 item.className = 'colorItem';
                 item.innerHTML = `
-      <div class="ciLeft">
-        <div class="sw" style="background:#${p.color}"></div>
-        <div class="ciText">
-          <b>${p.name}</b>
-          <small>#${p.color}</small>
-        </div>
-      </div>
-      <div class="ciRight">点击替换</div>
-    `;
+          <div class="ciLeft">
+            <div class="sw" style="background:#${p.color}"></div>
+            <div class="ciText">
+              <b>${p.name}</b>
+              <small>#${p.color}</small>
+            </div>
+          </div>
+          <div class="ciRight">点击替换</div>
+        `;
                 item.addEventListener('click', () => { applyEditColorToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
                 el.editList.appendChild(item);
             }
@@ -1520,7 +1704,7 @@
         }
 
         /**********************
-         * 11) Next / Prev / Done / Undo
+         * Next / Prev / Done / Undo
          **********************/
         function idxOfCode(code) { return state.usedColors.findIndex(u => u.code === code); }
 
@@ -1629,7 +1813,7 @@
             if (!state.done.has(k)) {
                 state.done.add(k);
                 state.doneHistory.push(k);
-                if (state.doneHistory.length > 5000) state.doneHistory.shift();
+                if (state.doneHistory.length > 200000) state.doneHistory.shift();
             }
             el.statusPill.textContent = '已标记完成';
             updateMeta();
@@ -1654,6 +1838,37 @@
             requestDraw();
         }
 
+        /**********************
+         * 一键完成指定色号
+         **********************/
+        function markDoneAllForColor(code) {
+            if (!state.isReady || !code) return;
+            const idx = idxOfCode(code);
+            if (idx < 0) return;
+
+            let added = 0;
+            for (let i = 0; i < state.cells.length; i++) {
+                if (state.cells[i] === idx && !state.done.has(i)) {
+                    state.done.add(i);
+                    state.doneHistory.push(i);
+                    added++;
+                }
+            }
+            while (state.doneHistory.length > 200000) state.doneHistory.shift();
+
+            state.activeTarget = null;
+            state.history.length = 0;
+
+            el.statusPill.textContent = added ? `已一键完成 ${code}（+${added}）` : `颜色 ${code} 已全部完成`;
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+
+            // 完成后自动切到下一个仍有剩余的颜色，并定位到下一格
+            advanceToNextColorIfNeeded();
+            nextCell();
+        }
+
         function updateMeta() {
             el.metaGrid.textContent = state.isReady ? `网格：${state.gridW} × ${state.gridH}` : '网格：—';
             el.metaColor.textContent = state.activeCode ? `当前色：${state.activeCode}` : '当前色：—';
@@ -1674,7 +1889,7 @@
         }
 
         /**********************
-         * 12) Manual edit cell
+         * Manual edit cell
          **********************/
         function openEditOverlay() {
             if (!state.lastPickedCell) {
@@ -1713,7 +1928,7 @@
         }
 
         /**********************
-         * 13) Canvas rendering
+         * Canvas rendering
          **********************/
         const ctx = el.view.getContext('2d');
         let rafId = null;
@@ -1726,6 +1941,7 @@
             el.view.height = Math.max(1, Math.floor(rect.height * dpr));
             requestDraw();
         }
+
         window.addEventListener('resize', () => {
             resizeViewCanvas();
             if (el.cropOverlay.style.display === 'flex') layoutCropCanvas(false);
@@ -1745,6 +1961,7 @@
             view.panY = (ch - worldH) / 2;
             requestDraw();
         }
+
         function resetView() { view.zoom = 1; view.panX = 0; view.panY = 0; fitToScreen(); }
 
         function requestDraw() {
@@ -1879,7 +2096,7 @@
         }
 
         /**********************
-         * 14) Canvas interactions (pan/zoom + tap select)
+         * Canvas interactions (pan/zoom + tap select)
          **********************/
         const pointer = { down: false, moved: false, startX: 0, startY: 0, pan0X: 0, pan0Y: 0, t0: 0, touches: new Map(), pinch0: null };
 
@@ -2003,11 +2220,270 @@
         el.view.addEventListener('wheel', onWheel, { passive: false });
 
         /**********************
-         * 15) Wire UI events
+         * Bulk overlay list
+         **********************/
+        function refreshBulkList() {
+            if (!state.isReady) { el.bulkList.innerHTML = ''; return; }
+            const q = (el.bulkSearch.value || '').trim().toUpperCase();
+            el.bulkList.innerHTML = '';
+
+            // 按数量降序
+            const arr = [...state.usedColors].slice().sort((a, b) => (state.usedCounts.get(b.code) || 0) - (state.usedCounts.get(a.code) || 0));
+
+            for (const u of arr) {
+                if (q && !u.code.toUpperCase().includes(q)) continue;
+                const total = state.usedCounts.get(u.code) || 0;
+                const remain = remainForCode(u.code);
+                const item = document.createElement('div');
+                item.className = 'colorItem' + (u.code === state.activeCode ? ' active' : '');
+                item.innerHTML = `
+          <div class="ciLeft">
+            <div class="sw" style="background:#${u.hex}"></div>
+            <div class="ciText">
+              <b>${u.code}</b>
+              <small>#${u.hex}</small>
+            </div>
+          </div>
+          <div class="ciRight">${remain}/${total} 剩余</div>
+        `;
+                item.addEventListener('click', () => {
+                    closeOverlay(el.bulkOverlay);
+                    markDoneAllForColor(u.code);
+                });
+                el.bulkList.appendChild(item);
+            }
+        }
+
+        function openBulkOverlay() {
+            if (!state.isReady) { alert('请先导入图纸'); return; }
+            el.bulkSearch.value = '';
+            refreshBulkList();
+            openOverlay(el.bulkOverlay);
+        }
+
+        /**********************
+         * Export
+         **********************/
+        const exportState = {
+            includeSet: new Set(), // 选中导出的色号
+        };
+
+        function openExportOverlay() {
+            if (!state.isReady) { alert('请先导入图纸'); return; }
+            // 默认全选
+            exportState.includeSet = new Set(state.usedColors.map(u => u.code));
+            el.exportSearch.value = '';
+            el.exportBlankExcluded.checked = true;
+            refreshExportList();
+            openOverlay(el.exportOverlay);
+        }
+
+        function refreshExportList() {
+            if (!el.exportOverlay) return;
+            if (!state.isReady) { el.exportList.innerHTML = ''; return; }
+
+            const q = (el.exportSearch.value || '').trim().toUpperCase();
+            el.exportList.innerHTML = '';
+
+            const arr = [...state.usedColors].slice().sort((a, b) => (state.usedCounts.get(b.code) || 0) - (state.usedCounts.get(a.code) || 0));
+
+            for (const u of arr) {
+                if (q && !u.code.toUpperCase().includes(q)) continue;
+
+                const total = state.usedCounts.get(u.code) || 0;
+                const remain = remainForCode(u.code);
+                const checked = exportState.includeSet.has(u.code);
+
+                const item = document.createElement('div');
+                item.className = 'colorItem';
+                item.style.cursor = 'default';
+                item.innerHTML = `
+          <div class="checkRow">
+            <input type="checkbox" ${checked ? 'checked' : ''} />
+            <div class="ciLeft" style="flex:1">
+              <div class="sw" style="background:#${u.hex}"></div>
+              <div class="ciText">
+                <b>${u.code}</b>
+                <small>#${u.hex}</small>
+              </div>
+            </div>
+            <div class="ciRight">${remain}/${total} 剩余</div>
+          </div>
+        `;
+                const cb = item.querySelector('input[type="checkbox"]');
+                cb.addEventListener('change', () => {
+                    if (cb.checked) exportState.includeSet.add(u.code);
+                    else exportState.includeSet.delete(u.code);
+                });
+                el.exportList.appendChild(item);
+            }
+        }
+
+        function calcExportStats(includeSet) {
+            const total = new Map();
+            const done = new Map();
+
+            for (let i = 0; i < state.cells.length; i++) {
+                const idx = state.cells[i];
+                if (idx < 0) continue;
+                const code = state.usedColors[idx].code;
+                if (!includeSet.has(code)) continue;
+
+                total.set(code, (total.get(code) || 0) + 1);
+                if (state.done.has(i)) done.set(code, (done.get(code) || 0) + 1);
+            }
+
+            const rows = [];
+            for (const [code, t] of total.entries()) {
+                const d = done.get(code) || 0;
+                const hex = state.codeToHex.get(code) || state.usedColors.find(x => x.code === code)?.hex || '000000';
+                rows.push({ code, hex, total: t, done: d, remain: Math.max(0, t - d) });
+            }
+            rows.sort((a, b) => b.total - a.total);
+            return rows;
+        }
+
+        function exportGridCSV() {
+            const includeSet = exportState.includeSet;
+            const blankExcluded = el.exportBlankExcluded.checked;
+
+            const W = state.gridW, H = state.gridH;
+            const lines = [];
+            for (let y = 0; y < H; y++) {
+                const row = [];
+                for (let x = 0; x < W; x++) {
+                    const k = y * W + x;
+                    const idx = state.cells[k];
+                    if (idx < 0) { row.push(''); continue; }
+                    const code = state.usedColors[idx].code;
+                    if (includeSet.has(code)) row.push(code);
+                    else row.push(blankExcluded ? '' : code);
+                }
+                lines.push(row.join(','));
+            }
+            downloadText(`mard_grid_${timeStamp()}.csv`, lines.join('\n'), 'text/csv;charset=utf-8');
+        }
+
+        function exportStatsCSV() {
+            const includeSet = exportState.includeSet;
+            const rows = calcExportStats(includeSet);
+            let csv = 'code,hex,total,done,remain\n';
+            for (const r of rows) {
+                csv += `${r.code},#${r.hex},${r.total},${r.done},${r.remain}\n`;
+            }
+            downloadText(`mard_stats_${timeStamp()}.csv`, csv, 'text/csv;charset=utf-8');
+        }
+
+        function exportAsJSON() {
+            const includeSet = exportState.includeSet;
+            const blankExcluded = el.exportBlankExcluded.checked;
+            const W = state.gridW, H = state.gridH;
+
+            const cells = [];
+            for (let y = 0; y < H; y++) {
+                const row = [];
+                for (let x = 0; x < W; x++) {
+                    const k = y * W + x;
+                    const idx = state.cells[k];
+                    if (idx < 0) { row.push(''); continue; }
+                    const code = state.usedColors[idx].code;
+                    if (includeSet.has(code)) row.push(code);
+                    else row.push(blankExcluded ? '' : code);
+                }
+                cells.push(row);
+            }
+
+            const stats = calcExportStats(includeSet);
+            const excluded = state.usedColors.map(u => u.code).filter(c => !includeSet.has(c));
+
+            const out = {
+                app: 'mard-grid-helper',
+                exportedAt: new Date().toISOString(),
+                grid: { W, H },
+                palette: 'mard',
+                includeCodes: [...includeSet],
+                excludedCodes: excluded,
+                blankExcludedInGrid: !!blankExcluded,
+                stats,
+                cells,
+                done: [...state.done],
+            };
+
+            downloadText(`mard_export_${timeStamp()}.json`, JSON.stringify(out, null, 2), 'application/json;charset=utf-8');
+        }
+
+        function exportAsPNG() {
+            const includeSet = exportState.includeSet;
+            const blankExcluded = el.exportBlankExcluded.checked;
+            const W = state.gridW, H = state.gridH;
+
+            const cell = 20; // 导出像素格大小
+            const out = document.createElement('canvas');
+            out.width = W * cell;
+            out.height = H * cell;
+            const g = out.getContext('2d');
+
+            // 背景
+            g.clearRect(0, 0, out.width, out.height);
+            g.fillStyle = '#0b0c10';
+            g.fillRect(0, 0, out.width, out.height);
+
+            // 画格子
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const k = y * W + x;
+                    const idx = state.cells[k];
+                    if (idx < 0) continue;
+                    const code = state.usedColors[idx].code;
+
+                    if (!includeSet.has(code) && blankExcluded) {
+                        // 留空：画成背景略亮
+                        g.fillStyle = 'rgba(255,255,255,0.04)';
+                        g.fillRect(x * cell, y * cell, cell, cell);
+                        continue;
+                    }
+
+                    const hex = state.usedColors[idx].hex;
+                    g.fillStyle = '#' + hex;
+                    g.fillRect(x * cell, y * cell, cell, cell);
+
+                    if (state.done.has(k)) {
+                        g.fillStyle = 'rgba(0,0,0,0.42)';
+                        g.fillRect(x * cell, y * cell, cell, cell);
+                    }
+                }
+            }
+
+            // 网格线
+            g.strokeStyle = 'rgba(0,0,0,0.35)';
+            g.lineWidth = 1;
+            for (let x = 0; x <= W; x++) {
+                g.beginPath();
+                g.moveTo(x * cell + 0.5, 0);
+                g.lineTo(x * cell + 0.5, H * cell);
+                g.stroke();
+            }
+            for (let y = 0; y <= H; y++) {
+                g.beginPath();
+                g.moveTo(0, y * cell + 0.5);
+                g.lineTo(W * cell, y * cell + 0.5);
+                g.stroke();
+            }
+
+            out.toBlob((blob) => {
+                if (!blob) { alert('导出 PNG 失败'); return; }
+                downloadBlob(`mard_grid_${timeStamp()}.png`, blob);
+            }, 'image/png');
+        }
+
+        /**********************
+         * Wire UI events
          **********************/
         el.colorSearch.addEventListener('input', refreshColorLists);
         el.pickSearch.addEventListener('input', refreshPickList);
         el.editSearch.addEventListener('input', refreshEditList);
+        el.bulkSearch.addEventListener('input', refreshBulkList);
+        el.exportSearch.addEventListener('input', refreshExportList);
 
         el.showCode.addEventListener('change', () => { state.showCode = el.showCode.checked; requestDraw() });
         el.onlyActiveColor.addEventListener('change', () => { state.onlyActiveColor = el.onlyActiveColor.checked; requestDraw() });
@@ -2027,13 +2503,6 @@
         el.doneBtn.addEventListener('click', markDoneCurrent);
         el.undoBtn.addEventListener('click', undoDone);
 
-        el.mNext.addEventListener('click', nextCell);
-        el.mPrev.addEventListener('click', prevCell);
-        el.mDone.addEventListener('click', markDoneCurrent);
-        el.mUndo.addEventListener('click', undoDone);
-        el.mFit.addEventListener('click', fitToScreen);
-        el.mPickColor.addEventListener('click', () => openOverlay(el.pickOverlay));
-
         el.editCellBtn.addEventListener('click', openEditOverlay);
         el.editClose.addEventListener('click', () => closeOverlay(el.editOverlay));
 
@@ -2046,17 +2515,65 @@
         el.cropCanvas.addEventListener('pointercancel', onCropPointerUp);
 
         el.pickClose.addEventListener('click', () => closeOverlay(el.pickOverlay));
+        el.bulkClose.addEventListener('click', () => closeOverlay(el.bulkOverlay));
+
+        el.bulkBtn.addEventListener('click', openBulkOverlay);
+        el.exportBtn.addEventListener('click', openExportOverlay);
+
+        el.exportClose.addEventListener('click', () => closeOverlay(el.exportOverlay));
+        el.exportSelectAll.addEventListener('click', () => {
+            exportState.includeSet = new Set(state.usedColors.map(u => u.code));
+            refreshExportList();
+        });
+        el.exportSelectNone.addEventListener('click', () => {
+            exportState.includeSet = new Set();
+            refreshExportList();
+        });
+
+        el.exportGridCSV.addEventListener('click', exportGridCSV);
+        el.exportStatsCSV.addEventListener('click', exportStatsCSV);
+        el.exportJSON.addEventListener('click', exportAsJSON);
+        el.exportPNG.addEventListener('click', exportAsPNG);
+
+        // FAB 折叠/展开（默认展开，可记忆）
+        function setFabCollapsed(collapsed) {
+            el.fab.classList.toggle('collapsed', !!collapsed);
+            localStorage.setItem('fab_collapsed', collapsed ? '1' : '0');
+        }
+        const fabCollapsed = localStorage.getItem('fab_collapsed') === '1';
+        setFabCollapsed(fabCollapsed);
+
+        el.fabMain.addEventListener('click', () => {
+            setFabCollapsed(!el.fab.classList.contains('collapsed'));
+        });
+
+        // FAB 行为
+        el.fabPick.addEventListener('click', () => { if (!state.isReady) return alert('请先导入图纸'); openOverlay(el.pickOverlay); });
+        el.fabFit.addEventListener('click', fitToScreen);
+        el.fabPrev.addEventListener('click', prevCell);
+        el.fabNext.addEventListener('click', nextCell);
+        el.fabDone.addEventListener('click', markDoneCurrent);
+        el.fabUndo.addEventListener('click', undoDone);
+        el.fabBulk.addEventListener('click', openBulkOverlay);
+        el.fabExport.addEventListener('click', openExportOverlay);
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeOverlay(el.cropOverlay);
                 closeOverlay(el.pickOverlay);
                 closeOverlay(el.editOverlay);
+                closeOverlay(el.bulkOverlay);
+                closeOverlay(el.exportOverlay);
             }
+            // 快捷键（可选）
+            if (e.key === 'n' || e.key === 'N') nextCell();
+            if (e.key === 'p' || e.key === 'P') prevCell();
+            if (e.key === 'd' || e.key === 'D') markDoneCurrent();
+            if (e.key === 'u' || e.key === 'U') undoDone();
         });
 
         /**********************
-         * 16) Import handlers
+         * Import handlers
          **********************/
         el.allowedFile.addEventListener('change', async () => {
             const f = el.allowedFile.files?.[0];
@@ -2099,18 +2616,10 @@
         });
 
         /**********************
-         * 17) Init
+         * Init
          **********************/
-        function resizeViewCanvas() {
-            const rect = el.view.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            el.view.width = Math.max(1, Math.floor(rect.width * dpr));
-            el.view.height = Math.max(1, Math.floor(rect.height * dpr));
-            requestDraw();
-        }
         resizeViewCanvas();
         requestDraw();
-
     </script>
 </body>
 
