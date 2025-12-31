@@ -3,952 +3,2114 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-    <title>拼豆辅助 - 逐格高亮定位</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>拼豆逐格高亮助手（Mard）</title>
     <style>
         :root {
-            --border: #ddd;
-            --bg: #fafafa;
-            --panel: #fff;
-            --text: #222;
-            --muted: #666;
-            --r: 16px;
+            --bg: #0b0c10;
+            --panel: #12141b;
+            --panel2: #0f1117;
+            --text: #e8eaf0;
+            --muted: #a7adbd;
+            --line: #2a2f3b;
+            --accent: #7aa2ff;
+            --danger: #ff5d5d;
+            --ok: #42d392;
+            --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            --radius: 16px;
+            --btnh: 46px
         }
 
-        html,
+        * {
+            box-sizing: border-box
+        }
+
         body {
-            height: 100%;
             margin: 0;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
             color: var(--text);
+            background: radial-gradient(1200px 800px at 20% -10%, rgba(122, 162, 255, .20), transparent 60%),
+                radial-gradient(1000px 700px at 110% 10%, rgba(66, 211, 146, .12), transparent 60%), var(--bg);
+            overflow: hidden;
         }
 
-        #app {
-            height: 100%;
+        .app {
+            height: 100dvh;
             display: grid;
-            grid-template-rows: auto 1fr;
+            grid-template-columns: 360px 1fr;
+            gap: 12px;
+            padding: 12px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom))
         }
 
-        #top {
-            padding: 10px;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
+        @media (max-width:980px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr
+            }
+
+            .side {
+                order: 2
+            }
+
+            .stage {
+                order: 1
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(18, 20, 27, .92), rgba(12, 14, 20, .92));
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden
+        }
+
+        .side {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            min-height: 0
+        }
+
+        .header {
+            padding: 14px 14px 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
             align-items: center;
+            justify-content: space-between;
+            gap: 10px
         }
 
-        #top input,
-        #top button,
-        #top select {
-            padding: 8px 10px;
-            border: 1px solid #ccc;
-            border-radius: 12px;
-            background: #fff;
+        .title {
+            display: flex;
+            flex-direction: column;
+            gap: 2px
         }
 
-        #top button {
-            cursor: pointer;
+        .title b {
+            font-size: 14px;
+            letter-spacing: .2px
         }
 
-        #top button.primary {
-            border-color: #555;
-            font-weight: 700;
-        }
-
-        #top .sep {
-            width: 1px;
-            height: 28px;
-            background: var(--border);
-            margin: 0 2px;
-        }
-
-        #status {
+        .title small {
             font-size: 12px;
-            color: #444;
-            min-width: 200px;
+            color: var(--muted)
         }
 
-        #main {
-            min-height: 0;
-            display: grid;
-            grid-template-columns: 320px 1fr;
+        .chip {
+            font-size: 12px;
+            color: #cdd3e6;
+            background: rgba(122, 162, 255, .12);
+            border: 1px solid rgba(122, 162, 255, .25);
+            padding: 6px 10px;
+            border-radius: 999px;
+            white-space: nowrap
         }
 
-        #left {
-            border-right: 1px solid var(--border);
-            background: var(--panel);
-            min-height: 0;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-        }
-
-        #leftHead {
-            padding: 10px;
-            border-bottom: 1px solid var(--border);
+        .content {
+            padding: 12px 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
+            min-height: 0
         }
 
-        #leftHead .row {
+        .row {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
-            align-items: center;
+            align-items: center
         }
 
-        #palette {
-            overflow: auto;
-            padding: 10px;
+        label {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        input[type="file"],
+        input[type="number"],
+        input[type="text"],
+        select {
+            background: rgba(255, 255, 255, .06);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, .10);
+            border-radius: 12px;
+            padding: 10px 12px;
+            outline: none;
+            width: 100%
+        }
+
+        input[type="number"] {
+            padding: 10px 10px
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .btn {
+            height: var(--btnh);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: var(--text);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 14px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: 600;
+            letter-spacing: .2px
+        }
+
+        .btn:active {
+            transform: translateY(1px)
+        }
+
+        .btn.primary {
+            background: rgba(122, 162, 255, .18);
+            border-color: rgba(122, 162, 255, .35)
+        }
+
+        .btn.ok {
+            background: rgba(66, 211, 146, .16);
+            border-color: rgba(66, 211, 146, .30)
+        }
+
+        .btn.danger {
+            background: rgba(255, 93, 93, .14);
+            border-color: rgba(255, 93, 93, .25)
+        }
+
+        .btn.small {
+            height: 38px;
+            border-radius: 12px;
+            font-size: 13px
+        }
+
+        .btn.wide {
+            width: 100%
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, .15)
+        }
+
+        .toggle input {
+            width: 18px;
+            height: 18px
+        }
+
+        .hr {
+            height: 1px;
+            background: rgba(255, 255, 255, .08);
+            margin: 4px 0
+        }
+
+        .colors {
+            min-height: 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 8px
         }
 
-        .sw {
+        .colorsTop {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .colorsTop input {
+            flex: 1
+        }
+
+        .list {
+            min-height: 0;
+            overflow: auto;
+            padding-right: 4px
+        }
+
+        .colorItem {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 999px;
+            padding: 10px 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: rgba(0, 0, 0, .12);
             cursor: pointer;
-            user-select: none;
+            margin-bottom: 8px
         }
 
-        .sw.active {
-            border-color: #000;
-            box-shadow: 0 0 0 2px rgba(0, 0, 0, .08) inset;
+        .colorItem.active {
+            border-color: rgba(122, 162, 255, .45);
+            box-shadow: 0 0 0 2px rgba(122, 162, 255, .14) inset;
+            background: rgba(122, 162, 255, .10)
         }
 
-        .swL {
+        .sw {
+            width: 22px;
+            height: 22px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            flex: 0 0 auto
+        }
+
+        .ciLeft {
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0
         }
 
-        .dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 1px solid #aaa;
-            flex: 0 0 auto;
+        .ciText {
+            display: flex;
+            flex-direction: column;
+            min-width: 0
         }
 
-        .meta {
+        .ciText b {
+            font-size: 13px;
+            line-height: 1.1
+        }
+
+        .ciText small {
             font-size: 12px;
             color: var(--muted);
-        }
-
-        #leftFoot {
-            padding: 10px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        #wrap {
-            position: relative;
             overflow: hidden;
-            background: #f1f1f1;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .ciRight {
+            font-variant-numeric: tabular-nums;
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap
+        }
+
+        .stage {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative
+        }
+
+        .stageTop {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap
+        }
+
+        .stageTop .meta {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .stageMain {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(0, 0, 0, .05))
         }
 
         canvas {
             width: 100%;
             height: 100%;
             display: block;
-            touch-action: none;
+            touch-action: none
         }
 
-        @media (max-width: 900px) {
-            #main {
-                grid-template-columns: 1fr;
+        .bottomBar {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
+            background: linear-gradient(180deg, rgba(10, 12, 16, .0), rgba(10, 12, 16, .92) 40%, rgba(10, 12, 16, .98));
+            border-top: 1px solid rgba(255, 255, 255, .08);
+            gap: 10px;
+            z-index: 20
+        }
+
+        @media (max-width:980px) {
+            body {
+                overflow: auto
             }
 
-            #left {
-                border-right: none;
-                border-bottom: 1px solid var(--border);
+            .app {
+                height: auto;
+                min-height: 100dvh;
+                overflow: visible;
+                padding-bottom: 92px
             }
 
-            #palette {
-                flex-direction: row;
-                flex-wrap: nowrap;
-                overflow: auto;
+            .bottomBar {
+                display: flex
             }
 
-            .sw {
-                min-width: 220px;
+            .stageMain {
+                height: 60vh
             }
+        }
+
+        .bbRow {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            width: 100%
+        }
+
+        .bbRow2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .10)
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .62);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 999
+        }
+
+        .modal {
+            width: min(980px, 96vw);
+            max-height: min(92vh, 900px);
+            display: flex;
+            flex-direction: column
+        }
+
+        .modalHead {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px
+        }
+
+        .modalBody {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0
+        }
+
+        .modalBody .hint {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5
+        }
+
+        .modalCanvasWrap {
+            background: rgba(0, 0, 0, .22);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 14px;
+            overflow: hidden;
+            height: min(60vh, 560px)
+        }
+
+        #cropCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none
+        }
+
+        .modalFoot {
+            padding: 12px 14px;
+            border-top: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap
+        }
+
+        .kbd {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            border: 1px solid rgba(255, 255, 255, .14);
+            border-radius: 6px;
+            color: #d7dcf0;
+            background: rgba(255, 255, 255, .06)
         }
     </style>
 </head>
 
 <body>
-    <div id="app">
-        <div id="top">
-            <input id="file" type="file" accept="image/*">
-            <label>行 <input id="rows" type="number" value="100" min="1" max="400"
-                    style="width:90px"></label>
-            <label>列 <input id="cols" type="number" value="100" min="1" max="400"
-                    style="width:90px"></label>
-            <label>颜色K
-                <input id="k" type="number" value="24" min="2" max="64" style="width:90px">
-            </label>
-            <button id="gen" class="primary">生成图案</button>
-
-            <div class="sep"></div>
-
-            <label>顺序
-                <select id="order">
-                    <option value="scan">从左到右扫描</option>
-                    <option value="snake">蛇形扫描</option>
-                </select>
-            </label>
-
-            <button id="prevCell">上一格</button>
-            <button id="nextCell" class="primary">下一格</button>
-            <button id="markDone">标记完成并下一格</button>
-
-            <div class="sep"></div>
-
-            <button id="fit">适配窗口</button>
-            <button id="zoomIn">＋</button>
-            <button id="zoomOut">－</button>
-
-            <div class="sep"></div>
-
-            <button id="toggleEdit">编辑模式：关</button>
-            <button id="clearDone">清空进度</button>
-
-            <span id="status">请选择一张图片 → 设置行列/K → 生成图案</span>
-        </div>
-
-        <div id="main">
-            <div id="left">
-                <div id="leftHead">
-                    <div class="row">
-                        <strong>调色板</strong>
-                        <span class="meta" id="palMeta">未生成</span>
-                    </div>
-                    <div class="row meta">
-                        提示：先点选一种颜色，然后点“下一格”逐个定位。<br>
-                        快捷键：N=下一格，P=上一格，Space=完成并下一格，E=编辑模式
-                    </div>
+    <div class="app">
+        <aside class="side card">
+            <div class="header">
+                <div class="title">
+                    <b>拼豆逐格高亮助手</b>
+                    <small>导入图纸 → 选颜色 → 下一格/完成（不跳视图）</small>
                 </div>
-
-                <div id="palette"></div>
-
-                <div id="leftFoot" class="meta">
-                    点击格子：<span id="tapInfo">标记完成</span>（编辑模式开启时=改色）
-                </div>
+                <div class="chip">Mard 色号</div>
             </div>
 
-            <div id="wrap">
-                <canvas id="c"></canvas>
+            <div class="content">
+                <div class="row">
+                    <div style="flex:1">
+                        <label>导入图纸图片（先裁剪）</label>
+                        <input id="imgFile" type="file" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div style="flex:1">
+                        <label>或者：导入 CSV 色号图纸（不靠颜色识别）</label>
+                        <input id="csvFile" type="file" accept=".csv,text/csv,text/plain">
+                    </div>
+                </div>
+
+                <div class="grid2">
+                    <div>
+                        <label>网格宽 W（≤100）</label>
+                        <input id="gridW" type="number" min="1" max="100" value="100">
+                    </div>
+                    <div>
+                        <label>网格高 H（≤100）</label>
+                        <input id="gridH" type="number" min="1" max="100" value="100">
+                    </div>
+                </div>
+
+                <div class="toggle">
+                    <input id="autoFit" type="checkbox" checked>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                        <b style="font-size:13px">自动按图片比例适配</b>
+                        <span style="font-size:12px; color:var(--muted)">启用时以 100 为最大边，自动算
+                            W/H</span>
+                    </div>
+                </div>
+
+                <div class="grid2">
+                    <div>
+                        <label>最大使用颜色数 N（图片导入时生效）</label>
+                        <input id="maxColors" type="number" min="1" max="256" value="80">
+                    </div>
+                    <div>
+                        <label>导入色号限制表 sehao.csv（可选）</label>
+                        <input id="allowedFile" type="file" accept=".csv,text/csv,text/plain">
+                    </div>
+                </div>
+
+                <div class="toggle">
+                    <input id="limitSehao" type="checkbox" checked>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                        <b style="font-size:13px">使用 sehao.csv 色号限制</b>
+                        <span style="font-size:12px; color:var(--muted)">避免生成不在清单中的色号</span>
+                    </div>
+                </div>
+
+                <div class="grid2">
+                    <button class="btn small" id="fitBtn" type="button">适配屏幕</button>
+                    <button class="btn small" id="resetViewBtn" type="button">重置视图</button>
+                </div>
+
+                <div class="grid2">
+                    <button class="btn small" id="zoomOutBtn" type="button">缩小</button>
+                    <button class="btn small" id="zoomInBtn" type="button">放大</button>
+                </div>
+
+                <div class="toggle">
+                    <input id="showCode" type="checkbox" checked>
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                        <b style="font-size:13px">格子内显示色号</b>
+                        <span style="font-size:12px; color:var(--muted)">缩放较小时会自动不画字</span>
+                    </div>
+                </div>
+
+                <div class="toggle">
+                    <input id="onlyActiveColor" type="checkbox">
+                    <div style="display:flex; flex-direction:column; gap:2px">
+                        <b style="font-size:13px">只看当前颜色</b>
+                        <span style="font-size:12px; color:var(--muted)">其它颜色变淡，便于定位</span>
+                    </div>
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="grid2">
+                    <button class="btn primary wide" id="nextBtn" type="button">下一格</button>
+                    <button class="btn ok wide" id="doneBtn" type="button">完成此格</button>
+                </div>
+
+                <div class="grid2">
+                    <button class="btn wide" id="prevBtn" type="button">上一格</button>
+                    <button class="btn danger wide" id="undoBtn" type="button">撤销完成</button>
+                </div>
+
+                <div class="row" style="justify-content:space-between">
+                    <span class="pill" id="statusPill">未导入</span>
+                    <span class="pill" id="posPill">—</span>
+                </div>
+
+                <div class="colors">
+                    <div class="colorsTop">
+                        <input id="colorSearch" type="text" placeholder="搜索色号（例如 A1 / C20 / M15）">
+                        <button class="btn small" id="editCellBtn" type="button"
+                            title="点选一个格子后可手动改色">改色</button>
+                    </div>
+                    <div class="list" id="colorList"></div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="stage card">
+            <div class="stageTop">
+                <div class="meta">
+                    <span>操作：</span>
+                    <span class="pill">拖拽平移</span>
+                    <span class="pill">滚轮/双指缩放</span>
+                    <span class="pill">点格子：定位</span>
+                </div>
+                <div class="meta">
+                    <span id="metaGrid">网格：—</span>
+                    <span id="metaColor">当前色：—</span>
+                    <span id="metaTodo">剩余：—</span>
+                </div>
+            </div>
+            <div class="stageMain">
+                <canvas id="view"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <div class="bottomBar">
+        <div class="bbRow">
+            <button class="btn small" id="mPrev" type="button">上一格</button>
+            <button class="btn small primary" id="mNext" type="button">下一格</button>
+            <button class="btn small ok" id="mDone" type="button">完成</button>
+            <button class="btn small danger" id="mUndo" type="button">撤销</button>
+        </div>
+        <div class="bbRow2">
+            <button class="btn small" id="mPickColor" type="button">选颜色</button>
+            <button class="btn small" id="mFit" type="button">适配屏幕</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="cropOverlay">
+        <div class="modal card">
+            <div class="modalHead">
+                <div class="title">
+                    <b>裁剪图纸</b>
+                    <small>拖动/缩放裁剪框 → 应用裁剪（也可跳过）</small>
+                </div>
+                <button class="btn small" id="cropClose" type="button">关闭</button>
+            </div>
+            <div class="modalBody">
+                <div class="hint">提示：裁剪框可拖动；四角可缩放。移动端直接手指操作即可。</div>
+                <div class="modalCanvasWrap"><canvas id="cropCanvas"></canvas></div>
+                <div class="hint">快捷键（电脑）：<span class="kbd">Esc</span> 关闭</div>
+            </div>
+            <div class="modalFoot">
+                <button class="btn" id="cropSkip" type="button">跳过裁剪</button>
+                <button class="btn primary" id="cropApply" type="button">应用裁剪</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="pickOverlay">
+        <div class="modal card" style="width:min(720px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>选择当前颜色</b>
+                    <small>点选一个色号即可</small>
+                </div>
+                <button class="btn small" id="pickClose" type="button">关闭</button>
+            </div>
+            <div class="modalBody" style="min-height:0">
+                <input id="pickSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）">
+                <div class="list" id="pickList" style="max-height:60vh"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="editOverlay">
+        <div class="modal card" style="width:min(720px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>手动改色</b>
+                    <small id="editInfo">—</small>
+                </div>
+                <button class="btn small" id="editClose" type="button">关闭</button>
+            </div>
+            <div class="modalBody">
+                <div class="hint">用于修正“颜色识别”误判：先点选一个格子，再在这里选正确色号。</div>
+                <input id="editSearch" type="text" placeholder="搜索色号（例如 A1）">
+                <div class="list" id="editList" style="max-height:55vh"></div>
             </div>
         </div>
     </div>
 
     <script>
-        (() => {
-            const el = {
-                file: document.getElementById('file'),
-                rows: document.getElementById('rows'),
-                cols: document.getElementById('cols'),
-                k: document.getElementById('k'),
-                gen: document.getElementById('gen'),
-                order: document.getElementById('order'),
-                prevCell: document.getElementById('prevCell'),
-                nextCell: document.getElementById('nextCell'),
-                markDone: document.getElementById('markDone'),
-                fit: document.getElementById('fit'),
-                zoomIn: document.getElementById('zoomIn'),
-                zoomOut: document.getElementById('zoomOut'),
-                toggleEdit: document.getElementById('toggleEdit'),
-                clearDone: document.getElementById('clearDone'),
-                status: document.getElementById('status'),
-                palette: document.getElementById('palette'),
-                palMeta: document.getElementById('palMeta'),
-                tapInfo: document.getElementById('tapInfo'),
-                c: document.getElementById('c'),
+        /**********************
+         * 1) 你的 mard 色号表：name -> hex
+         **********************/
+        var allPalettes = new Map();
+        allPalettes.set("mard",
+            [
+                { name: 'A1', color: 'fff5ca' },
+                { name: 'A2', color: 'ffffcc' },
+                { name: 'A3', color: 'fff297' },
+                { name: 'A4', color: 'fff651' },
+                { name: 'A5', color: 'ffdb4d' },
+                { name: 'A6', color: 'fcc73b' },
+                { name: 'A7', color: 'fe8443' },
+                { name: 'A8', color: 'e5c62d' },
+                { name: 'A9', color: 'fbaa72' },
+                { name: 'A10', color: 'fd9443' },
+                { name: 'A11', color: 'ffcf7c' },
+                { name: 'A12', color: 'fdbc9e' },
+                { name: 'A14', color: 'ff7443' },
+                { name: 'A16', color: 'fff49e' },
+                { name: 'A17', color: 'fde676' },
+                { name: 'A18', color: 'ffb67b' },
+                { name: 'A19', color: 'fa9285' },
+                { name: 'A20', color: 'fee27e' },
+                { name: 'B1', color: 'eaf149' },
+                { name: 'B2', color: 'b6eb45' },
+                { name: 'B3', color: '9af5a8' },
+                { name: 'B4', color: '51ff51' },
+                { name: 'B5', color: '6fd363' },
+                { name: 'B6', color: '79ebc7' },
+                { name: 'B7', color: '3bb48b' },
+                { name: 'B8', color: '13904c' },
+                { name: 'B9', color: '28523a' },
+                { name: 'B10', color: 'ace1d9' },
+                { name: 'B11', color: '52641d' },
+                { name: 'B12', color: '206a4f' },
+                { name: 'B13', color: 'c7ff85' },
+                { name: 'B14', color: 'd0ed39' },
+                { name: 'B15', color: '205726' },
+                { name: 'B16', color: 'ccffaa' },
+                { name: 'B17', color: 'b6c130' },
+                { name: 'B18', color: 'e4f954' },
+                { name: 'B19', color: '00d0a1' },
+                { name: 'B20', color: 'c4ffd7' },
+                { name: 'B21', color: '157c74' },
+                { name: 'B22', color: '0d5349' },
+                { name: 'B23', color: '32451d' },
+                { name: 'B24', color: 'e4fb9f' },
+                { name: 'B25', color: '5c9083' },
+                { name: 'B26', color: 'a9a44e' },
+                { name: 'C1', color: 'e0ffe2' },
+                { name: 'C2', color: 'b9f6ed' },
+                { name: 'C3', color: 'a8e1fc' },
+                { name: 'C4', color: '84d2ff' },
+                { name: 'C5', color: '24b9e4' },
+                { name: 'C6', color: '78bdf8' },
+                { name: 'C7', color: '3c8aec' },
+                { name: 'C8', color: '195dc4' },
+                { name: 'C9', color: '2e26cc' },
+                { name: 'C10', color: '30d9ed' },
+                { name: 'C11', color: '00c4d0' },
+                { name: 'C12', color: '1a3758' },
+                { name: 'C13', color: 'b4d7ff' },
+                { name: 'C14', color: 'e0fff9' },
+                { name: 'C15', color: '00cbd2' },
+                { name: 'C16', color: '0a5491' },
+                { name: 'C17', color: '7be7f4' },
+                { name: 'C18', color: '264257' },
+                { name: 'C19', color: '259bb9' },
+                { name: 'C20', color: '157cbf' },
+                { name: 'C21', color: 'deeefe' },
+                { name: 'C22', color: '7fc0d4' },
+                { name: 'D1', color: 'b9cffe' },
+                { name: 'D2', color: '9ca6db' },
+                { name: 'D3', color: '224eb1' },
+                { name: 'D4', color: '2e4770' },
+                { name: 'D5', color: 'c56fb8' },
+                { name: 'D6', color: 'aa76e4' },
+                { name: 'D7', color: '7e4dc7' },
+                { name: 'D8', color: 'e0cdff' },
+                { name: 'D9', color: 'c9befd' },
+                { name: 'D10', color: '351d4f' },
+                { name: 'D11', color: 'c1c2ff' },
+                { name: 'D12', color: 'daafe4' },
+                { name: 'D13', color: 'c64dae' },
+                { name: 'D14', color: '9735b3' },
+                { name: 'D15', color: '46297d' },
+                { name: 'D16', color: 'e3e4ff' },
+                { name: 'D17', color: 'c9d9fd' },
+                { name: 'D18', color: 'b87bd5' },
+                { name: 'D19', color: 'e8cbfa' },
+                { name: 'D20', color: 'a73ae9' },
+                { name: 'D21', color: '8b339b' },
+                { name: 'D22', color: '595093' },
+                { name: 'D23', color: 'efe7fc' },
+                { name: 'D24', color: '7f77ea' },
+                { name: 'D25', color: '423bc0' },
+                { name: 'E1', color: 'ffd1cc' },
+                { name: 'E2', color: 'ffcaea' },
+                { name: 'E3', color: 'fb8dc5' },
+                { name: 'E4', color: 'ee78ac' },
+                { name: 'E5', color: 'f653a6' },
+                { name: 'E6', color: 'fd2f81' },
+                { name: 'E7', color: 'a2176a' },
+                { name: 'E8', color: 'ffd8e8' },
+                { name: 'E9', color: 'ea8cda' },
+                { name: 'E10', color: 'bf3974' },
+                { name: 'E11', color: 'fee7e2' },
+                { name: 'E12', color: 'fcafdd' },
+                { name: 'E13', color: 'a61284' },
+                { name: 'E14', color: 'fdd2bf' },
+                { name: 'E15', color: 'f3d1d7' },
+                { name: 'E16', color: 'fff3eb' },
+                { name: 'E17', color: 'fae8f8' },
+                { name: 'E18', color: 'fdd1ea' },
+                { name: 'E19', color: 'f6d3f3' },
+                { name: 'E20', color: 'f4d7e9' },
+                { name: 'E21', color: 'd6b3b9' },
+                { name: 'E22', color: 'c685b0' },
+                { name: 'E23', color: 'a089a3' },
+                { name: 'F1', color: 'fda098' },
+                { name: 'F2', color: 'fa6a62' },
+                { name: 'F3', color: 'ec4a59' },
+                { name: 'F4', color: 'ff452c' },
+                { name: 'F5', color: 'ff0000' },
+                { name: 'F6', color: 'b53710' },
+                { name: 'F7', color: '811530' },
+                { name: 'F8', color: 'bb082f' },
+                { name: 'F9', color: 'e67088' },
+                { name: 'F10', color: '8c420c' },
+                { name: 'F11', color: '6f3329' },
+                { name: 'F12', color: 'f9425e' },
+                { name: 'F13', color: 'd14b30' },
+                { name: 'F14', color: 'fdaca9' },
+                { name: 'F15', color: 'dd0c2c' },
+                { name: 'F16', color: 'fddedc' },
+                { name: 'F17', color: 'fbaf9f' },
+                { name: 'F18', color: 'e0804d' },
+                { name: 'F19', color: 'c64b60' },
+                { name: 'G1', color: 'fee5c7' },
+                { name: 'G2', color: 'fcceb7' },
+                { name: 'G3', color: 'f9c2a4' },
+                { name: 'G4', color: 'dcb99a' },
+                { name: 'G5', color: 'f2a76d' },
+                { name: 'G6', color: 'ee9867' },
+                { name: 'G7', color: '91664e' },
+                { name: 'G8', color: '4d312c' },
+                { name: 'G9', color: 'eabb85' },
+                { name: 'G10', color: 'bf9143' },
+                { name: 'G11', color: 'e4c896' },
+                { name: 'G12', color: 'ddb986' },
+                { name: 'G13', color: 'd19058' },
+                { name: 'G14', color: '856a54' },
+                { name: 'G15', color: 'f5f3dc' },
+                { name: 'G16', color: 'f2dfce' },
+                { name: 'G17', color: '5d5249' },
+                { name: 'G18', color: 'ffedd9' },
+                { name: 'G19', color: 'eca450' },
+                { name: 'G20', color: 'b0623e' },
+                { name: 'G21', color: 'cb906e' },
+                { name: 'H2', color: 'ffffff' },
+                { name: 'H3', color: 'aeaeae' },
+                { name: 'H4', color: '979296' },
+                { name: 'H5', color: '606060' },
+                { name: 'H6', color: '353537' },
+                { name: 'H7', color: '000000' },
+                { name: 'H8', color: 'f7e6f0' },
+                { name: 'H9', color: 'e6e3dc' },
+                { name: 'H10', color: 'e5e2f3' },
+                { name: 'H11', color: 'cecdcb' },
+                { name: 'H12', color: 'fff2e2' },
+                { name: 'H13', color: 'ece1cb' },
+                { name: 'H14', color: 'c5ced8' },
+                { name: 'H15', color: '9facc7' },
+                { name: 'H16', color: '241d1a' },
+                { name: 'H17', color: 'f6f4f5' },
+                { name: 'H18', color: 'fffdf1' },
+                { name: 'H19', color: 'f8f3eb' },
+                { name: 'H20', color: 'a0acb1' },
+                { name: 'M1', color: 'ccd7c9' },
+                { name: 'M2', color: '91aa94' },
+                { name: 'M3', color: '718898' },
+                { name: 'M4', color: 'dacec2' },
+                { name: 'M5', color: 'dbd6b6' },
+                { name: 'M6', color: 'c8b999' },
+                { name: 'M7', color: 'c1aca7' },
+                { name: 'M8', color: 'b09699' },
+                { name: 'M9', color: 'ab9787' },
+                { name: 'M10', color: 'bb9fb9' },
+                { name: 'M11', color: '9b809f' },
+                { name: 'M12', color: '5a474c' },
+                { name: 'M13', color: 'dda89a' },
+                { name: 'M14', color: 'c0725d' },
+                { name: 'M15', color: '86848a' },
+            ]
+        );
+
+        // 这里把 palette 做一次“统一格式化”：name 大写、color 去掉 #、转小写
+        function normalizePalette(arr) {
+            return (arr || []).map(p => ({
+                name: String(p.name || '').trim().toUpperCase(),
+                color: String(p.color || '').trim().replace(/^#/, '').toLowerCase()
+            })).filter(p => p.name && /^[0-9a-f]{6}$/.test(p.color));
+        }
+
+        const MARD_PALETTE = normalizePalette(allPalettes.get("mard"));
+
+        /**********************
+         * 2) 默认允许色号（不上传 sehao.csv 时，就用 palette 里全部色号）
+         **********************/
+        const DEFAULT_ALLOWED_CODES = MARD_PALETTE.map(p => p.name);
+
+        /**********************
+         * 3) State
+         **********************/
+        const state = {
+            gridW: 0,
+            gridH: 0,
+            cells: null,            // Int16Array, value = usedColors index, -1 = empty
+            usedColors: [],         // [{code, hex}]
+            usedCounts: new Map(),  // code -> count
+            codeToHex: new Map(),   // palette map
+            activeCode: null,
+            activeTarget: null,     // {x,y}
+            history: [],            // prev positions
+            done: new Set(),        // completed cells
+            doneHistory: [],        // completed stack (for undo)
+            lastPickedCell: null,
+            onlyActiveColor: false,
+            showCode: true,
+            allowedSet: null,
+            allowedList: null,      // custom allowed list loaded from file
+            isReady: false,
+        };
+
+        const view = { zoom: 1, panX: 0, panY: 0, baseCell: 18 };
+
+        /**********************
+         * 4) Elements
+         **********************/
+        const el = {
+            imgFile: document.getElementById('imgFile'),
+            csvFile: document.getElementById('csvFile'),
+            allowedFile: document.getElementById('allowedFile'),
+            gridW: document.getElementById('gridW'),
+            gridH: document.getElementById('gridH'),
+            autoFit: document.getElementById('autoFit'),
+            limitSehao: document.getElementById('limitSehao'),
+            maxColors: document.getElementById('maxColors'),
+
+            fitBtn: document.getElementById('fitBtn'),
+            resetViewBtn: document.getElementById('resetViewBtn'),
+            zoomInBtn: document.getElementById('zoomInBtn'),
+            zoomOutBtn: document.getElementById('zoomOutBtn'),
+
+            showCode: document.getElementById('showCode'),
+            onlyActiveColor: document.getElementById('onlyActiveColor'),
+
+            nextBtn: document.getElementById('nextBtn'),
+            prevBtn: document.getElementById('prevBtn'),
+            doneBtn: document.getElementById('doneBtn'),
+            undoBtn: document.getElementById('undoBtn'),
+
+            statusPill: document.getElementById('statusPill'),
+            posPill: document.getElementById('posPill'),
+
+            colorSearch: document.getElementById('colorSearch'),
+            colorList: document.getElementById('colorList'),
+
+            metaGrid: document.getElementById('metaGrid'),
+            metaColor: document.getElementById('metaColor'),
+            metaTodo: document.getElementById('metaTodo'),
+
+            view: document.getElementById('view'),
+            editCellBtn: document.getElementById('editCellBtn'),
+
+            // mobile
+            mPrev: document.getElementById('mPrev'),
+            mNext: document.getElementById('mNext'),
+            mDone: document.getElementById('mDone'),
+            mUndo: document.getElementById('mUndo'),
+            mPickColor: document.getElementById('mPickColor'),
+            mFit: document.getElementById('mFit'),
+
+            // crop
+            cropOverlay: document.getElementById('cropOverlay'),
+            cropCanvas: document.getElementById('cropCanvas'),
+            cropClose: document.getElementById('cropClose'),
+            cropSkip: document.getElementById('cropSkip'),
+            cropApply: document.getElementById('cropApply'),
+
+            // pick overlay
+            pickOverlay: document.getElementById('pickOverlay'),
+            pickClose: document.getElementById('pickClose'),
+            pickSearch: document.getElementById('pickSearch'),
+            pickList: document.getElementById('pickList'),
+
+            // edit overlay
+            editOverlay: document.getElementById('editOverlay'),
+            editClose: document.getElementById('editClose'),
+            editSearch: document.getElementById('editSearch'),
+            editList: document.getElementById('editList'),
+            editInfo: document.getElementById('editInfo'),
+        };
+
+        /**********************
+         * 5) Utils
+         **********************/
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)) }
+        function hexToRgb(hex) {
+            const m = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 0, b: 0 };
+        }
+        function srgbToLinear(u) { u /= 255; return u <= 0.04045 ? u / 12.92 : Math.pow((u + 0.055) / 1.055, 2.4) }
+        function rgbToLab(r, g, b) {
+            const R = srgbToLinear(r), G = srgbToLinear(g), B = srgbToLinear(b);
+            let x = (R * 0.4124564 + G * 0.3575761 + B * 0.1804375) / 0.95047;
+            let y = (R * 0.2126729 + G * 0.7151522 + B * 0.0721750) / 1.00000;
+            let z = (R * 0.0193339 + G * 0.1191920 + B * 0.9503041) / 1.08883;
+            const f = t => t > 0.008856 ? Math.cbrt(t) : (7.787 * t + 16 / 116);
+            const fx = f(x), fy = f(y), fz = f(z);
+            return { L: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
+        }
+        function deltaE76(l1, l2) {
+            const dL = l1.L - l2.L, da = l1.a - l2.a, db = l1.b - l2.b;
+            return dL * dL + da * da + db * db;
+        }
+        function openOverlay(node) { node.style.display = 'flex' }
+        function closeOverlay(node) { node.style.display = 'none' }
+
+        /**********************
+         * 6) Palette maps + allowed list
+         **********************/
+        function rebuildPaletteMaps() {
+            state.codeToHex.clear();
+            for (const p of MARD_PALETTE) { state.codeToHex.set(p.name, p.color); }
+
+            if (el.limitSehao.checked) {
+                const list = state.allowedList ?? DEFAULT_ALLOWED_CODES;
+                state.allowedSet = new Set(list);
+            } else {
+                state.allowedSet = null;
+            }
+        }
+        rebuildPaletteMaps();
+
+        function parseAllowedCodesCSV(text) {
+            const tokens = text.replace(/\r/g, '\n').split(/\n|,|;|\t|\s+/).map(s => s.trim()).filter(Boolean);
+            const set = new Set();
+            for (const t of tokens) {
+                const code = t.toUpperCase();
+                if (state.codeToHex.has(code)) set.add(code);
+            }
+            return [...set];
+        }
+
+        /**********************
+         * 7) CSV mode: parse code grid
+         **********************/
+        function parseCodeCSV(text) {
+            const lines = text.replace(/\r/g, '\n').split('\n').map(s => s.trim()).filter(Boolean);
+            const rows = lines.map(line => line.split(/[,;\t ]+/).map(x => x.trim()).filter(Boolean));
+            const H = rows.length;
+            const W = Math.max(...rows.map(r => r.length));
+            if (W < 1 || H < 1) throw new Error('CSV 为空或格式不对');
+            if (W > 100 || H > 100) throw new Error('CSV 网格超过 100×100');
+            for (const r of rows) { while (r.length < W) r.push(''); }
+            return { W, H, rows };
+        }
+
+        function buildFromCSV(rows, W, H) {
+            rebuildPaletteMaps();
+            state.gridW = W; state.gridH = H;
+            state.done.clear(); state.doneHistory.length = 0;
+            state.history.length = 0; state.activeTarget = null;
+
+            const codeCount = new Map();
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const code = (rows[y][x] || '').trim().toUpperCase();
+                    if (!code) continue;
+                    if (state.allowedSet && !state.allowedSet.has(code)) continue;
+                    if (!state.codeToHex.has(code)) continue;
+                    codeCount.set(code, (codeCount.get(code) || 0) + 1);
+                }
+            }
+            const used = [...codeCount.entries()].sort((a, b) => b[1] - a[1]).map(([code, count]) => ({ code, hex: state.codeToHex.get(code), count }));
+            state.usedColors = used.map(u => ({ code: u.code, hex: u.hex }));
+            state.usedCounts = new Map(used.map(u => [u.code, u.count]));
+
+            const idxMap = new Map();
+            state.usedColors.forEach((u, i) => idxMap.set(u.code, i));
+            state.cells = new Int16Array(W * H);
+            state.cells.fill(-1);
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const code = (rows[y][x] || '').trim().toUpperCase();
+                    if (!code) continue;
+                    if (state.allowedSet && !state.allowedSet.has(code)) continue;
+                    const idx = idxMap.get(code);
+                    if (idx === undefined) continue;
+                    state.cells[y * W + x] = idx;
+                }
+            }
+
+            state.activeCode = state.usedColors[0]?.code || null;
+            state.isReady = true;
+            syncUIAfterBuild();
+            fitToScreen();
+        }
+
+        /**********************
+         * 8) Crop (image import)
+         **********************/
+        const crop = {
+            img: null,
+            displayScale: 1,
+            rect: { x: 0, y: 0, w: 0, h: 0 },
+            dragging: false,
+            dragMode: null,
+            last: { x: 0, y: 0 },
+            offsetX: 0, offsetY: 0,
+        };
+
+        function openCrop(img) {
+            crop.img = img;
+            openOverlay(el.cropOverlay);
+            requestAnimationFrame(() => layoutCropCanvas(true));
+        }
+
+        function layoutCropCanvas(resetRect) {
+            const c = el.cropCanvas;
+            const wrap = c.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            c.width = Math.max(1, Math.floor(wrap.width * dpr));
+            c.height = Math.max(1, Math.floor(wrap.height * dpr));
+
+            const iw = crop.img.naturalWidth, ih = crop.img.naturalHeight;
+            const sx = c.width / iw, sy = c.height / ih;
+            crop.displayScale = Math.min(sx, sy);
+
+            const dw = iw * crop.displayScale, dh = ih * crop.displayScale;
+            crop.offsetX = (c.width - dw) / 2;
+            crop.offsetY = (c.height - dh) / 2;
+
+            if (resetRect) {
+                crop.rect.x = crop.offsetX; crop.rect.y = crop.offsetY;
+                crop.rect.w = dw; crop.rect.h = dh;
+            } else {
+                crop.rect.x = clamp(crop.rect.x, crop.offsetX, crop.offsetX + dw - 10);
+                crop.rect.y = clamp(crop.rect.y, crop.offsetY, crop.offsetY + dh - 10);
+                crop.rect.w = clamp(crop.rect.w, 10, crop.offsetX + dw - crop.rect.x);
+                crop.rect.h = clamp(crop.rect.h, 10, crop.offsetY + dh - crop.rect.y);
+            }
+            drawCrop();
+        }
+
+        function drawCrop() {
+            const c = el.cropCanvas;
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.fillStyle = 'rgba(0,0,0,.25)';
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            const iw = crop.img.naturalWidth, ih = crop.img.naturalHeight;
+            const dw = iw * crop.displayScale, dh = ih * crop.displayScale;
+            ctx.drawImage(crop.img, crop.offsetX, crop.offsetY, dw, dh);
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,.45)';
+            ctx.beginPath();
+            ctx.rect(0, 0, c.width, c.height);
+            ctx.rect(crop.rect.x, crop.rect.y, crop.rect.w, crop.rect.h);
+            ctx.fill('evenodd');
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(122,162,255,.95)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(crop.rect.x, crop.rect.y, crop.rect.w, crop.rect.h);
+
+            const hs = 12;
+            const pts = [
+                { k: 'nw', x: crop.rect.x, y: crop.rect.y },
+                { k: 'ne', x: crop.rect.x + crop.rect.w, y: crop.rect.y },
+                { k: 'sw', x: crop.rect.x, y: crop.rect.y + crop.rect.h },
+                { k: 'se', x: crop.rect.x + crop.rect.w, y: crop.rect.y + crop.rect.h },
+            ];
+            ctx.fillStyle = 'rgba(122,162,255,.95)';
+            for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, hs / 2, 0, Math.PI * 2); ctx.fill(); }
+            ctx.restore();
+        }
+
+        function cropHitTest(x, y) {
+            const hs = 14;
+            const corners = [
+                { k: 'nw', x: crop.rect.x, y: crop.rect.y },
+                { k: 'ne', x: crop.rect.x + crop.rect.w, y: crop.rect.y },
+                { k: 'sw', x: crop.rect.x, y: crop.rect.y + crop.rect.h },
+                { k: 'se', x: crop.rect.x + crop.rect.w, y: crop.rect.y + crop.rect.h },
+            ];
+            for (const c of corners) {
+                const dx = x - c.x, dy = y - c.y;
+                if (dx * dx + dy * dy <= hs * hs) return c.k;
+            }
+            if (x >= crop.rect.x && x <= crop.rect.x + crop.rect.w && y >= crop.rect.y && y <= crop.rect.y + crop.rect.h) return 'move';
+            return null;
+        }
+
+        function onCropPointerDown(e) {
+            const c = el.cropCanvas;
+            c.setPointerCapture(e.pointerId);
+            const dpr = window.devicePixelRatio || 1;
+            const rect = c.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * dpr;
+            const y = (e.clientY - rect.top) * dpr;
+            const mode = cropHitTest(x, y);
+            if (!mode) return;
+            crop.dragging = true; crop.dragMode = mode;
+            crop.last.x = x; crop.last.y = y;
+        }
+        function onCropPointerMove(e) {
+            if (!crop.dragging) return;
+            const c = el.cropCanvas;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = c.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * dpr;
+            const y = (e.clientY - rect.top) * dpr;
+            const dx = x - crop.last.x, dy = y - crop.last.y;
+            crop.last.x = x; crop.last.y = y;
+
+            const bounds = {
+                x0: crop.offsetX,
+                y0: crop.offsetY,
+                x1: crop.offsetX + crop.img.naturalWidth * crop.displayScale,
+                y1: crop.offsetY + crop.img.naturalHeight * crop.displayScale,
             };
-            const ctx = el.c.getContext('2d');
+            const minSize = 20;
 
-            // 视图变换：cell-space -> canvas
-            let view = { scale: 8, ox: 0, oy: 0 }; // scale: 每个格子的像素尺寸（CSS像素）
-            let img = null;
+            if (crop.dragMode === 'move') {
+                crop.rect.x = clamp(crop.rect.x + dx, bounds.x0, bounds.x1 - crop.rect.w);
+                crop.rect.y = clamp(crop.rect.y + dy, bounds.y0, bounds.y1 - crop.rect.h);
+            } else {
+                let x0 = crop.rect.x, y0 = crop.rect.y, x1 = crop.rect.x + crop.rect.w, y1 = crop.rect.y + crop.rect.h;
+                if (crop.dragMode.includes('n')) y0 += dy;
+                if (crop.dragMode.includes('w')) x0 += dx;
+                if (crop.dragMode.includes('s')) y1 += dy;
+                if (crop.dragMode.includes('e')) x1 += dx;
 
-            // 网格
-            let ROWS = 100, COLS = 100;
-            let idxMap = null;          // Uint16Array, 每格 palette index
-            let done = null;            // Uint8Array, 1=done
-            let palette = [];           // [{r,g,b,count,remain}]
-            let activePal = 0;
+                x0 = clamp(x0, bounds.x0, x1 - minSize);
+                y0 = clamp(y0, bounds.y0, y1 - minSize);
+                x1 = clamp(x1, x0 + minSize, bounds.x1);
+                y1 = clamp(y1, y0 + minSize, bounds.y1);
 
-            // 逐格高亮
-            let seq = [];               // 当前颜色的格子索引列表（按顺序）
-            let seqPos = 0;             // 当前指针
-            let cursor = -1;            // 当前高亮格子 idx（r*COLS+c）
-
-            // 渲染优化：用“像素级”pattern画布
-            let patCanvas = null, patCtx = null, patImage = null;
-            let doneCanvas = null, doneCtx = null, doneImage = null;
-
-            // 模式
-            let editMode = false; // true: 点格子改色；false: 点格子标记done
-            let dragging = false;
-            let last = { x: 0, y: 0 };
-            const pointers = new Map();
-
-            function setStatus(t) { el.status.textContent = t; }
-            function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-            function clampInt(v, a, b) { v = v | 0; return Math.max(a, Math.min(b, v)); }
-
-            function resizeCanvas() {
-                const r = el.c.getBoundingClientRect();
-                el.c.width = Math.max(1, Math.floor(r.width * devicePixelRatio));
-                el.c.height = Math.max(1, Math.floor(r.height * devicePixelRatio));
-                requestDraw();
+                crop.rect.x = x0; crop.rect.y = y0; crop.rect.w = x1 - x0; crop.rect.h = y1 - y0;
             }
-            window.addEventListener('resize', resizeCanvas);
+            drawCrop();
+        }
+        function onCropPointerUp() { crop.dragging = false; crop.dragMode = null; }
 
-            let raf = null;
-            function requestDraw() {
-                if (raf) return;
-                raf = requestAnimationFrame(() => { raf = null; draw(); });
-            }
+        function applyCropToImage() {
+            const sx = (crop.rect.x - crop.offsetX) / crop.displayScale;
+            const sy = (crop.rect.y - crop.offsetY) / crop.displayScale;
+            const sw = crop.rect.w / crop.displayScale;
+            const sh = crop.rect.h / crop.displayScale;
 
-            function cellToCanvas(x, y) {
-                // x,y in cell space
-                return {
-                    x: (x * view.scale + view.ox) * devicePixelRatio,
-                    y: (y * view.scale + view.oy) * devicePixelRatio
-                };
-            }
-            function canvasToCell(cx, cy) {
-                // cx,cy are CSS px
-                return {
-                    x: (cx - view.ox) / view.scale,
-                    y: (cy - view.oy) / view.scale
-                };
+            const out = document.createElement('canvas');
+            out.width = Math.max(1, Math.floor(sw));
+            out.height = Math.max(1, Math.floor(sh));
+            const ctx = out.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(crop.img, sx, sy, sw, sh, 0, 0, out.width, out.height);
+
+            const img = new Image();
+            img.onload = () => { closeOverlay(el.cropOverlay); buildFromImage(img); };
+            img.src = out.toDataURL('image/png');
+        }
+
+        /**********************
+         * 9) Image mode (quantize to nearest Mard) + maxColors limit
+         **********************/
+        function applyMaxColorsLimit(W, H, cells, usedColors, counts, maxN) {
+            if (!maxN || maxN < 1) return { cells, usedColors, counts };
+            if (usedColors.length <= maxN) return { cells, usedColors, counts };
+
+            const keep = usedColors.slice(0, maxN);
+            const keepLabs = keep.map(u => {
+                const rgb = hexToRgb(u.hex);
+                return { code: u.code, hex: u.hex, lab: rgbToLab(rgb.r, rgb.g, rgb.b) };
+            });
+
+            const mapOldToNew = new Map();
+            for (let i = 0; i < keep.length; i++) {
+                const oldIdx = usedColors.findIndex(u => u.code === keep[i].code);
+                mapOldToNew.set(oldIdx, i);
             }
 
-            function fitToView() {
-                if (!idxMap) return;
-                const r = el.c.getBoundingClientRect();
-                const sx = r.width / COLS;
-                const sy = r.height / ROWS;
-                view.scale = Math.max(2, Math.floor(Math.min(sx, sy) * 0.98));
-                view.ox = (r.width - COLS * view.scale) / 2;
-                view.oy = (r.height - ROWS * view.scale) / 2;
-                requestDraw();
-            }
-
-            function zoomAt(cx, cy, factor) {
-                const before = canvasToCell(cx, cy);
-                view.scale = clamp(view.scale * factor, 2, 80);
-                const after = cellToCanvas(before.x, before.y);
-                const ax = after.x / devicePixelRatio;
-                const ay = after.y / devicePixelRatio;
-                view.ox += (cx - ax);
-                view.oy += (cy - ay);
-                requestDraw();
-            }
-
-            function centerOnCell(index) {
-                if (index < 0) return;
-                const r = el.c.getBoundingClientRect();
-                const c = index % COLS;
-                const rr = Math.floor(index / COLS);
-                const targetX = (c + 0.5);
-                const targetY = (rr + 0.5);
-                view.ox = r.width / 2 - targetX * view.scale;
-                view.oy = r.height / 2 - targetY * view.scale;
-                requestDraw();
-            }
-
-            function buildPatternCanvas() {
-                patCanvas = document.createElement('canvas');
-                patCanvas.width = COLS;
-                patCanvas.height = ROWS;
-                patCtx = patCanvas.getContext('2d', { willReadFrequently: true });
-                const id = patCtx.createImageData(COLS, ROWS);
-                const d = id.data;
-                for (let i = 0; i < idxMap.length; i++) {
-                    const pi = idxMap[i];
-                    const p = palette[pi];
-                    const x = i % COLS;
-                    const y = Math.floor(i / COLS);
-                    const o = (y * COLS + x) * 4;
-                    d[o] = p.r; d[o + 1] = p.g; d[o + 2] = p.b; d[o + 3] = 255;
+            const excludedMap = new Map();
+            for (let oldIdx = 0; oldIdx < usedColors.length; oldIdx++) {
+                if (mapOldToNew.has(oldIdx)) continue;
+                const u = usedColors[oldIdx];
+                const rgb = hexToRgb(u.hex);
+                const lab = rgbToLab(rgb.r, rgb.g, rgb.b);
+                let best = 0, bestD = Infinity;
+                for (let i = 0; i < keepLabs.length; i++) {
+                    const d = deltaE76(lab, keepLabs[i].lab);
+                    if (d < bestD) { bestD = d; best = i; }
                 }
-                patCtx.putImageData(id, 0, 0);
-                patImage = id;
-
-                // done overlay canvas (semi-transparent black pixel at done)
-                doneCanvas = document.createElement('canvas');
-                doneCanvas.width = COLS;
-                doneCanvas.height = ROWS;
-                doneCtx = doneCanvas.getContext('2d', { willReadFrequently: true });
-                const id2 = doneCtx.createImageData(COLS, ROWS);
-                const e = id2.data;
-                for (let i = 0; i < done.length; i++) {
-                    if (!done[i]) continue;
-                    const x = i % COLS;
-                    const y = (i / COLS) | 0;
-                    const o = (y * COLS + x) * 4;
-                    e[o] = 0; e[o + 1] = 0; e[o + 2] = 0; e[o + 3] = 120;
-                }
-                doneCtx.putImageData(id2, 0, 0);
-                doneImage = id2;
+                excludedMap.set(oldIdx, best);
             }
 
-            function updateOneCellInPattern(index) {
-                if (!patCtx || !doneCtx) return;
-                const x = index % COLS;
-                const y = (index / COLS) | 0;
+            const newCells = new Int16Array(W * H);
+            newCells.fill(-1);
+            const newCounts = new Map();
+            for (const u of keep) { newCounts.set(u.code, 0); }
 
-                // update pattern pixel
-                const pi = idxMap[index];
-                const p = palette[pi];
-                const id = patCtx.getImageData(x, y, 1, 1);
-                id.data[0] = p.r; id.data[1] = p.g; id.data[2] = p.b; id.data[3] = 255;
-                patCtx.putImageData(id, x, y);
+            for (let i = 0; i < cells.length; i++) {
+                const old = cells[i];
+                if (old < 0) { newCells[i] = -1; continue; }
+                let ni = mapOldToNew.get(old);
+                if (ni === undefined) ni = excludedMap.get(old);
+                newCells[i] = ni;
+                const code = keep[ni].code;
+                newCounts.set(code, (newCounts.get(code) || 0) + 1);
+            }
 
-                // update done pixel
-                const id2 = doneCtx.getImageData(x, y, 1, 1);
-                if (done[index]) {
-                    id2.data[0] = 0; id2.data[1] = 0; id2.data[2] = 0; id2.data[3] = 120;
+            const sortedKeep = [...newCounts.entries()].sort((a, b) => b[1] - a[1]).map(([code, count]) => {
+                const u = keep.find(x => x.code === code);
+                return { code, hex: u.hex, count };
+            });
+
+            const resortMap = new Map();
+            sortedKeep.forEach((u, i) => resortMap.set(u.code, i));
+            const finalCells = new Int16Array(W * H);
+            finalCells.fill(-1);
+            const finalCounts = new Map();
+            for (const u of sortedKeep) { finalCounts.set(u.code, u.count); }
+
+            for (let i = 0; i < newCells.length; i++) {
+                const ci = newCells[i];
+                if (ci < 0) continue;
+                const code = keep[ci].code;
+                finalCells[i] = resortMap.get(code);
+            }
+
+            const finalUsed = sortedKeep.map(u => ({ code: u.code, hex: u.hex }));
+            return { cells: finalCells, usedColors: finalUsed, counts: finalCounts };
+        }
+
+        function buildFromImage(img) {
+            rebuildPaletteMaps();
+
+            let candidates = MARD_PALETTE.map(p => ({ name: p.name, color: p.color }));
+            if (state.allowedSet) {
+                candidates = candidates.filter(p => state.allowedSet.has(p.name));
+            }
+            const cand = candidates.map(p => {
+                const rgb = hexToRgb(p.color);
+                return { code: p.name, hex: p.color, lab: rgbToLab(rgb.r, rgb.g, rgb.b) };
+            });
+            if (cand.length === 0) throw new Error('候选色卡为空（检查 sehao 限制）');
+
+            let W = parseInt(el.gridW.value, 10) || 100;
+            let H = parseInt(el.gridH.value, 10) || 100;
+            W = clamp(W, 1, 100); H = clamp(H, 1, 100);
+
+            if (el.autoFit.checked) {
+                const iw = img.naturalWidth, ih = img.naturalHeight;
+                if (iw >= ih) {
+                    H = clamp(Math.round(W * ih / iw), 1, 100);
                 } else {
-                    id2.data[0] = 0; id2.data[1] = 0; id2.data[2] = 0; id2.data[3] = 0;
+                    W = clamp(Math.round(H * iw / ih), 1, 100);
                 }
-                doneCtx.putImageData(id2, x, y);
+                el.gridW.value = W; el.gridH.value = H;
             }
 
-            function draw() {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.clearRect(0, 0, el.c.width, el.c.height);
-                ctx.fillStyle = '#f1f1f1';
-                ctx.fillRect(0, 0, el.c.width, el.c.height);
+            const src = document.createElement('canvas');
+            src.width = W; src.height = H;
+            const sctx = src.getContext('2d', { willReadFrequently: true });
+            sctx.drawImage(img, 0, 0, W, H);
+            const data = sctx.getImageData(0, 0, W, H).data;
 
-                if (!idxMap || !patCanvas) return;
+            const cache = new Map();
+            function nearestCode(r, g, b) {
+                const key = (r << 16) | (g << 8) | b;
+                const hit = cache.get(key);
+                if (hit) return hit;
+                const lab = rgbToLab(r, g, b);
+                let best = cand[0], bestD = Infinity;
+                for (const c of cand) {
+                    const d = deltaE76(lab, c.lab);
+                    if (d < bestD) { bestD = d; best = c; }
+                }
+                cache.set(key, best);
+                return best;
+            }
 
-                // draw pattern (nearest-neighbor)
+            const codeGrid = new Array(W * H).fill('');
+            const codeCount = new Map();
+            for (let i = 0; i < W * H; i++) {
+                const a = data[i * 4 + 3];
+                if (a === 0) continue;
+                const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+                const best = nearestCode(r, g, b);
+                codeGrid[i] = best.code;
+                codeCount.set(best.code, (codeCount.get(best.code) || 0) + 1);
+            }
+
+            const sorted = [...codeCount.entries()].sort((a, b) => b[1] - a[1]);
+            let usedColors = sorted.map(([code, count]) => ({ code, hex: state.codeToHex.get(code), count }));
+
+            const idxMap = new Map();
+            usedColors.forEach((u, i) => idxMap.set(u.code, i));
+
+            let cells = new Int16Array(W * H);
+            cells.fill(-1);
+            for (let i = 0; i < W * H; i++) {
+                const code = codeGrid[i];
+                if (!code) continue;
+                const idx = idxMap.get(code);
+                if (idx === undefined) continue;
+                cells[i] = idx;
+            }
+
+            const maxN = clamp(parseInt(el.maxColors.value || '0', 10) || 0, 1, 256);
+            if (usedColors.length > maxN) {
+                const counts = new Map(sorted);
+                const limited = applyMaxColorsLimit(W, H, cells, usedColors.map(u => ({ code: u.code, hex: u.hex })), counts, maxN);
+                cells = limited.cells;
+                usedColors = limited.usedColors.map(u => ({ code: u.code, hex: u.hex, count: limited.counts.get(u.code) || 0 }));
+                state.usedCounts = limited.counts;
+            } else {
+                state.usedCounts = new Map(sorted);
+            }
+
+            state.gridW = W; state.gridH = H;
+            state.cells = cells;
+            state.usedColors = usedColors.map(u => ({ code: u.code, hex: u.hex }));
+
+            state.done.clear(); state.doneHistory.length = 0;
+            state.history.length = 0; state.activeTarget = null;
+            state.activeCode = state.usedColors[0]?.code || null;
+            state.isReady = true;
+            syncUIAfterBuild();
+            fitToScreen();
+        }
+
+        /**********************
+         * 10) UI sync + color lists
+         **********************/
+        function syncUIAfterBuild() {
+            state.showCode = el.showCode.checked;
+            state.onlyActiveColor = el.onlyActiveColor.checked;
+            el.statusPill.textContent = '已导入';
+            el.metaGrid.textContent = `网格：${state.gridW} × ${state.gridH}`;
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+        }
+
+        function refreshColorLists() {
+            const q = (el.colorSearch.value || '').trim().toUpperCase();
+            el.colorList.innerHTML = '';
+            for (const u of state.usedColors) {
+                if (q && !u.code.toUpperCase().includes(q)) continue;
+                const count = state.usedCounts.get(u.code) || 0;
+                const item = document.createElement('div');
+                item.className = 'colorItem' + (u.code === state.activeCode ? ' active' : '');
+                item.innerHTML = `
+      <div class="ciLeft">
+        <div class="sw" style="background:#${u.hex}"></div>
+        <div class="ciText">
+          <b>${u.code}</b>
+          <small>#${u.hex}</small>
+        </div>
+      </div>
+      <div class="ciRight">${count} 颗</div>
+    `;
+                item.addEventListener('click', () => setActiveColor(u.code));
+                el.colorList.appendChild(item);
+            }
+            refreshPickList();
+            refreshEditList();
+        }
+
+        function refreshPickList() {
+            const q = (el.pickSearch.value || '').trim().toUpperCase();
+            el.pickList.innerHTML = '';
+            for (const u of state.usedColors) {
+                if (q && !u.code.toUpperCase().includes(q)) continue;
+                const count = state.usedCounts.get(u.code) || 0;
+                const item = document.createElement('div');
+                item.className = 'colorItem' + (u.code === state.activeCode ? ' active' : '');
+                item.innerHTML = `
+      <div class="ciLeft">
+        <div class="sw" style="background:#${u.hex}"></div>
+        <div class="ciText">
+          <b>${u.code}</b>
+          <small>#${u.hex}</small>
+        </div>
+      </div>
+      <div class="ciRight">${count} 颗</div>
+    `;
+                item.addEventListener('click', () => { setActiveColor(u.code); closeOverlay(el.pickOverlay); });
+                el.pickList.appendChild(item);
+            }
+        }
+
+        function refreshEditList() {
+            const q = (el.editSearch.value || '').trim().toUpperCase();
+            el.editList.innerHTML = '';
+            for (const p of MARD_PALETTE) {
+                if (state.allowedSet && !state.allowedSet.has(p.name)) continue;
+                if (q && !p.name.toUpperCase().includes(q)) continue;
+                const item = document.createElement('div');
+                item.className = 'colorItem';
+                item.innerHTML = `
+      <div class="ciLeft">
+        <div class="sw" style="background:#${p.color}"></div>
+        <div class="ciText">
+          <b>${p.name}</b>
+          <small>#${p.color}</small>
+        </div>
+      </div>
+      <div class="ciRight">点击替换</div>
+    `;
+                item.addEventListener('click', () => { applyEditColorToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
+                el.editList.appendChild(item);
+            }
+        }
+
+        function setActiveColor(code) {
+            state.activeCode = code;
+            state.activeTarget = null;
+            state.history.length = 0;
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+        }
+
+        /**********************
+         * 11) Next / Prev / Done / Undo
+         **********************/
+        function idxOfCode(code) { return state.usedColors.findIndex(u => u.code === code); }
+
+        function remainForCode(code) {
+            if (!state.isReady || !code) return 0;
+            const idx = idxOfCode(code);
+            if (idx < 0) return 0;
+            let remain = 0;
+            for (let i = 0; i < state.cells.length; i++) {
+                if (state.cells[i] === idx && !state.done.has(i)) remain++;
+            }
+            return remain;
+        }
+
+        function pickNextColorWithRemain() {
+            if (!state.isReady || state.usedColors.length === 0) return null;
+            const start = Math.max(0, idxOfCode(state.activeCode));
+            for (let step = 1; step <= state.usedColors.length; step++) {
+                const i = (start + step) % state.usedColors.length;
+                const code = state.usedColors[i].code;
+                if (remainForCode(code) > 0) return code;
+            }
+            return null;
+        }
+
+        function advanceToNextColorIfNeeded() {
+            if (!state.activeCode) return false;
+            if (remainForCode(state.activeCode) > 0) return false;
+
+            const next = pickNextColorWithRemain();
+            if (!next) {
+                state.activeTarget = null;
+                state.history.length = 0;
+                el.statusPill.textContent = '全部完成 🎉';
+                updateMeta();
+                requestDraw();
+                return true;
+            }
+            state.activeCode = next;
+            state.activeTarget = null;
+            state.history.length = 0;
+            el.statusPill.textContent = `已切换颜色：${next}`;
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+            return true;
+        }
+
+        function findNextCell() {
+            if (!state.isReady || !state.activeCode) return null;
+            const W = state.gridW, H = state.gridH;
+            const idx = idxOfCode(state.activeCode);
+            if (idx < 0) return null;
+
+            if (state.activeTarget) {
+                const k = state.activeTarget.y * W + state.activeTarget.x;
+                if (!state.done.has(k) && state.cells[k] === idx) return state.activeTarget;
+            }
+
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const k = y * W + x;
+                    if (state.done.has(k)) continue;
+                    if (state.cells[k] === idx) return { x, y };
+                }
+            }
+            return null;
+        }
+
+        function nextCell() {
+            if (!state.isReady) return;
+
+            advanceToNextColorIfNeeded();
+
+            let t = findNextCell();
+            if (!t) {
+                if (advanceToNextColorIfNeeded()) {
+                    t = findNextCell();
+                }
+                if (!t) {
+                    el.statusPill.textContent = '全部完成 🎉';
+                    return;
+                }
+            }
+
+            if (state.activeTarget) {
+                state.history.push({ ...state.activeTarget });
+                if (state.history.length > 2000) state.history.shift();
+            }
+            state.activeTarget = t;
+            updateMeta();
+            requestDraw();
+        }
+
+        function prevCell() {
+            if (state.history.length === 0) return;
+            state.activeTarget = state.history.pop();
+            updateMeta();
+            requestDraw();
+        }
+
+        function markDoneCurrent() {
+            if (!state.activeTarget) return;
+            const W = state.gridW;
+            const k = state.activeTarget.y * W + state.activeTarget.x;
+            if (!state.done.has(k)) {
+                state.done.add(k);
+                state.doneHistory.push(k);
+                if (state.doneHistory.length > 5000) state.doneHistory.shift();
+            }
+            el.statusPill.textContent = '已标记完成';
+            updateMeta();
+            requestDraw();
+            nextCell();
+        }
+
+        function undoDone() {
+            if (!state.isReady) return;
+            if (state.doneHistory.length === 0) return;
+
+            const W = state.gridW;
+            const k = state.doneHistory.pop();
+            state.done.delete(k);
+
+            const x = k % W;
+            const y = Math.floor(k / W);
+            state.activeTarget = { x, y };
+            state.lastPickedCell = { x, y };
+            el.statusPill.textContent = '已撤销上一颗';
+            updateMeta();
+            requestDraw();
+        }
+
+        function updateMeta() {
+            el.metaGrid.textContent = state.isReady ? `网格：${state.gridW} × ${state.gridH}` : '网格：—';
+            el.metaColor.textContent = state.activeCode ? `当前色：${state.activeCode}` : '当前色：—';
+
+            if (!state.isReady || !state.activeCode) {
+                el.metaTodo.textContent = '剩余：—';
+                el.posPill.textContent = '—';
+                return;
+            }
+
+            const remain = remainForCode(state.activeCode);
+            el.metaTodo.textContent = `剩余：${remain}`;
+            if (state.activeTarget) {
+                el.posPill.textContent = `(${state.activeTarget.x + 1}, ${state.activeTarget.y + 1})`;
+            } else {
+                el.posPill.textContent = '—';
+            }
+        }
+
+        /**********************
+         * 12) Manual edit cell
+         **********************/
+        function openEditOverlay() {
+            if (!state.lastPickedCell) {
+                el.editInfo.textContent = '先点选一个格子';
+            } else {
+                el.editInfo.textContent = `当前格：(${state.lastPickedCell.x + 1}, ${state.lastPickedCell.y + 1})`;
+            }
+            el.editSearch.value = '';
+            refreshEditList();
+            openOverlay(el.editOverlay);
+        }
+
+        function applyEditColorToPickedCell(code, hex) {
+            if (!state.lastPickedCell || !state.isReady) return;
+            const x = state.lastPickedCell.x, y = state.lastPickedCell.y;
+            const k = y * state.gridW + x;
+
+            let idx = state.usedColors.findIndex(u => u.code === code);
+            if (idx < 0) {
+                state.usedColors.push({ code, hex });
+                idx = state.usedColors.length - 1;
+                state.usedCounts.set(code, 0);
+            }
+
+            const oldIdx = state.cells[k];
+            if (oldIdx >= 0) {
+                const oldCode = state.usedColors[oldIdx].code;
+                state.usedCounts.set(oldCode, Math.max(0, (state.usedCounts.get(oldCode) || 0) - 1));
+            }
+            state.cells[k] = idx;
+            state.usedCounts.set(code, (state.usedCounts.get(code) || 0) + 1);
+
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+        }
+
+        /**********************
+         * 13) Canvas rendering
+         **********************/
+        const ctx = el.view.getContext('2d');
+        let rafId = null;
+        let animT = 0;
+
+        function resizeViewCanvas() {
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            el.view.width = Math.max(1, Math.floor(rect.width * dpr));
+            el.view.height = Math.max(1, Math.floor(rect.height * dpr));
+            requestDraw();
+        }
+        window.addEventListener('resize', () => {
+            resizeViewCanvas();
+            if (el.cropOverlay.style.display === 'flex') layoutCropCanvas(false);
+        });
+
+        function fitToScreen() {
+            if (!state.isReady) return;
+            const W = state.gridW, H = state.gridH;
+            const pad = 24;
+            const cw = el.view.width, ch = el.view.height;
+            const zx = (cw - pad * 2) / (W * view.baseCell);
+            const zy = (ch - pad * 2) / (H * view.baseCell);
+            view.zoom = Math.max(0.2, Math.min(zx, zy));
+            const worldW = W * view.baseCell * view.zoom;
+            const worldH = H * view.baseCell * view.zoom;
+            view.panX = (cw - worldW) / 2;
+            view.panY = (ch - worldH) / 2;
+            requestDraw();
+        }
+        function resetView() { view.zoom = 1; view.panX = 0; view.panY = 0; fitToScreen(); }
+
+        function requestDraw() {
+            if (rafId) return;
+            rafId = requestAnimationFrame(draw);
+        }
+
+        function draw() {
+            rafId = null;
+            animT += 1 / 60;
+
+            const cw = el.view.width, ch = el.view.height;
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.fillStyle = 'rgba(0,0,0,.10)';
+            ctx.fillRect(0, 0, cw, ch);
+
+            if (!state.isReady) {
                 ctx.save();
-                ctx.imageSmoothingEnabled = false;
-                const p0 = cellToCanvas(0, 0);
-                const w = COLS * view.scale * devicePixelRatio;
-                const h = ROWS * view.scale * devicePixelRatio;
-                ctx.drawImage(patCanvas, p0.x, p0.y, w, h);
-
-                // done overlay
-                ctx.drawImage(doneCanvas, p0.x, p0.y, w, h);
+                ctx.fillStyle = 'rgba(255,255,255,.70)';
+                ctx.font = `${Math.round(14 * (window.devicePixelRatio || 1))}px system-ui`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('导入图纸图片或 CSV 后开始', cw / 2, ch / 2);
                 ctx.restore();
+                return;
+            }
 
-                // grid lines (only when zoom big enough)
-                if (view.scale >= 10) {
-                    const alpha = Math.min(0.5, Math.max(0.12, view.scale / 40));
-                    ctx.save();
-                    ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
-                    ctx.lineWidth = Math.max(1, devicePixelRatio);
-                    // draw visible grid lines only
-                    const r = el.c.getBoundingClientRect();
-                    const leftCell = Math.floor((0 - view.ox) / view.scale);
-                    const rightCell = Math.ceil((r.width - view.ox) / view.scale);
-                    const topCell = Math.floor((0 - view.oy) / view.scale);
-                    const botCell = Math.ceil((r.height - view.oy) / view.scale);
+            const W = state.gridW, H = state.gridH;
+            const cell = view.baseCell, z = view.zoom;
 
-                    const c0 = clampInt(leftCell, 0, COLS);
-                    const c1 = clampInt(rightCell, 0, COLS);
-                    const r0 = clampInt(topCell, 0, ROWS);
-                    const r1 = clampInt(botCell, 0, ROWS);
+            const x0 = Math.floor((-view.panX) / (cell * z)) - 1;
+            const y0 = Math.floor((-view.panY) / (cell * z)) - 1;
+            const x1 = Math.ceil((cw - view.panX) / (cell * z)) + 1;
+            const y1 = Math.ceil((ch - view.panY) / (cell * z)) + 1;
 
-                    for (let c = c0; c <= c1; c++) {
-                        const x = cellToCanvas(c, 0).x;
-                        const y0 = cellToCanvas(0, r0).y;
-                        const y1 = cellToCanvas(0, r1).y;
-                        ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+            const vx0 = clamp(x0, 0, W), vy0 = clamp(y0, 0, H), vx1 = clamp(x1, 0, W), vy1 = clamp(y1, 0, H);
+
+            const activeIdx = state.activeCode ? idxOfCode(state.activeCode) : -1;
+            const showText = state.showCode && z >= 0.65;
+
+            ctx.save();
+            ctx.translate(view.panX, view.panY);
+            ctx.scale(z, z);
+            ctx.lineWidth = 1 / z;
+            ctx.strokeStyle = 'rgba(0,0,0,.35)';
+
+            for (let y = vy0; y < vy1; y++) {
+                for (let x = vx0; x < vx1; x++) {
+                    const k = y * W + x;
+                    const idx = state.cells[k];
+
+                    let fill = '111318';
+                    if (idx >= 0) fill = state.usedColors[idx].hex;
+
+                    let alpha = 1;
+                    if (state.onlyActiveColor && activeIdx >= 0) {
+                        if (idx !== activeIdx) alpha = 0.18;
                     }
-                    for (let rr = r0; rr <= r1; rr++) {
-                        const y = cellToCanvas(0, rr).y;
-                        const x0 = cellToCanvas(c0, 0).x;
-                        const x1 = cellToCanvas(c1, 0).x;
-                        ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#' + fill;
+                    ctx.fillRect(x * cell, y * cell, cell, cell);
+                    ctx.globalAlpha = 1;
+
+                    ctx.strokeRect(x * cell, y * cell, cell, cell);
+
+                    if (state.done.has(k)) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.60;
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(x * cell, y * cell, cell, cell);
+
+                        ctx.globalAlpha = 0.92;
+                        ctx.strokeStyle = 'rgba(255,255,255,.60)';
+                        ctx.lineWidth = 2.4 / z;
+                        ctx.beginPath();
+                        ctx.moveTo(x * cell + 2, y * cell + 2);
+                        ctx.lineTo(x * cell + cell - 2, y * cell + cell - 2);
+                        ctx.moveTo(x * cell + cell - 2, y * cell + 2);
+                        ctx.lineTo(x * cell + 2, y * cell + cell - 2);
+                        ctx.stroke();
+                        ctx.restore();
                     }
-                    ctx.restore();
-                }
-
-                // cursor highlight
-                if (cursor >= 0) {
-                    const c = cursor % COLS;
-                    const rr = (cursor / COLS) | 0;
-                    const a = cellToCanvas(c, rr);
-                    const size = view.scale * devicePixelRatio;
-                    ctx.save();
-                    ctx.strokeStyle = 'rgba(255,255,0,0.98)';
-                    ctx.lineWidth = Math.max(4, 3 * devicePixelRatio);
-                    ctx.strokeRect(a.x, a.y, size, size);
-                    ctx.restore();
                 }
             }
 
-            function renderPalette() {
-                el.palette.innerHTML = '';
-                el.palMeta.textContent = palette.length ? `${palette.length} 色` : '未生成';
+            if (state.activeTarget) {
+                const { x, y } = state.activeTarget;
+                const px = x * cell, py = y * cell;
+                const pulse = 0.55 + 0.45 * Math.sin(animT * 6.0);
 
-                palette.forEach((p, i) => {
-                    const sw = document.createElement('div');
-                    sw.className = 'sw' + (i === activePal ? ' active' : '');
-                    const left = document.createElement('div');
-                    left.className = 'swL';
+                ctx.save();
+                ctx.globalAlpha = 0.10 + 0.08 * pulse;
+                ctx.fillStyle = 'rgba(255,234,0,1)';
+                ctx.fillRect(px, py, cell, cell);
 
-                    const dot = document.createElement('div');
-                    dot.className = 'dot';
-                    dot.style.background = `rgb(${p.r},${p.g},${p.b})`;
+                ctx.globalAlpha = 0.98;
+                ctx.lineWidth = (4.8 + 2.8 * pulse) / z;
+                ctx.strokeStyle = 'rgba(255,234,0,.95)';
+                ctx.strokeRect(px + 1.2, py + 1.2, cell - 2.4, cell - 2.4);
 
-                    const t = document.createElement('div');
-                    t.innerHTML = `<div><strong>色 ${i + 1}</strong> <span class="meta">剩余 ${p.remain}</span></div>
-                     <div class="meta">总数 ${p.count}</div>`;
-
-                    left.appendChild(dot);
-                    left.appendChild(t);
-
-                    const right = document.createElement('div');
-                    right.className = 'meta';
-                    right.textContent = (p.remain === 0 ? '✓' : '');
-
-                    sw.appendChild(left);
-                    sw.appendChild(right);
-
-                    sw.onclick = () => {
-                        activePal = i;
-                        buildSequenceForActiveColor(true);
-                        renderPalette();
-                        requestDraw();
-                    };
-                    el.palette.appendChild(sw);
-                });
+                ctx.globalAlpha = 0.80;
+                ctx.lineWidth = 1.4 / z;
+                ctx.strokeStyle = 'rgba(255,255,255,.70)';
+                ctx.strokeRect(px + 5, py + 5, cell - 10, cell - 10);
+                ctx.restore();
             }
 
-            function rebuildCounts() {
-                palette.forEach(p => { p.count = 0; p.remain = 0; });
-                for (let i = 0; i < idxMap.length; i++) {
-                    const pi = idxMap[i];
-                    palette[pi].count++;
-                    if (!done[i]) palette[pi].remain++;
+            if (showText) {
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `${Math.max(9, Math.min(15, Math.floor(cell * 0.46)))}px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace`;
+
+                for (let y = vy0; y < vy1; y++) {
+                    for (let x = vx0; x < vx1; x++) {
+                        const k = y * W + x;
+                        const idx = state.cells[k];
+                        if (idx < 0) continue;
+                        const code = state.usedColors[idx].code;
+                        const rgb = hexToRgb(state.usedColors[idx].hex);
+                        const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b);
+                        ctx.fillStyle = lum > 140 ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,.92)';
+                        ctx.fillText(code, x * cell + cell / 2, y * cell + cell / 2);
+                    }
                 }
+                ctx.restore();
             }
 
-            function buildSequenceForActiveColor(resetPos) {
-                if (!idxMap) return;
-                const key = activePal;
-                const list = [];
-                // collect all cells of this color that are NOT done
-                for (let i = 0; i < idxMap.length; i++) {
-                    if (idxMap[i] === key && !done[i]) list.push(i);
-                }
-                // order
-                const mode = el.order.value;
-                if (mode === 'scan') {
-                    // already scanline (increasing idx)
-                } else if (mode === 'snake') {
-                    // sort by row then snake columns
-                    list.sort((a, b) => {
-                        const ra = (a / COLS) | 0, rb = (b / COLS) | 0;
-                        if (ra !== rb) return ra - rb;
-                        const ca = a % COLS, cb = b % COLS;
-                        if (ra % 2 === 0) return ca - cb;
-                        return cb - ca;
-                    });
-                }
+            ctx.restore();
 
-                seq = list;
-                if (resetPos) seqPos = 0;
+            if (state.activeTarget) requestDraw();
+        }
 
-                if (seq.length) {
-                    cursor = seq[seqPos];
-                    centerOnCell(cursor);
-                    setStatus(`色 ${activePal + 1}：剩余 ${palette[activePal].remain}，定位到第 ${seqPos + 1}/${seq.length} 个`);
-                } else {
-                    cursor = -1;
-                    setStatus(`色 ${activePal + 1}：已完成（或无此颜色）`);
-                }
+        /**********************
+         * 14) Canvas interactions (pan/zoom + tap select)
+         **********************/
+        const pointer = { down: false, moved: false, startX: 0, startY: 0, pan0X: 0, pan0Y: 0, t0: 0, touches: new Map(), pinch0: null };
+
+        function canvasToWorld(sx, sy) {
+            const z = view.zoom, cell = view.baseCell;
+            const wx = (sx - view.panX) / z;
+            const wy = (sy - view.panY) / z;
+            return { x: Math.floor(wx / cell), y: Math.floor(wy / cell) };
+        }
+
+        function onPointerDown(e) {
+            el.view.setPointerCapture(e.pointerId);
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const sx = (e.clientX - rect.left) * dpr;
+            const sy = (e.clientY - rect.top) * dpr;
+
+            pointer.touches.set(e.pointerId, { x: sx, y: sy });
+            if (pointer.touches.size === 2) {
+                const pts = [...pointer.touches.values()];
+                pointer.pinch0 = {
+                    dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+                    zoom: view.zoom, panX: view.panX, panY: view.panY,
+                    midX: (pts[0].x + pts[1].x) / 2,
+                    midY: (pts[0].y + pts[1].y) / 2
+                };
+                return;
             }
 
-            function nextCell() {
-                if (!seq.length) return;
-                seqPos = clampInt(seqPos + 1, 0, seq.length - 1);
-                cursor = seq[seqPos];
-                centerOnCell(cursor);
-                setStatus(`色 ${activePal + 1}：定位到第 ${seqPos + 1}/${seq.length} 个`);
+            pointer.down = true; pointer.moved = false;
+            pointer.startX = sx; pointer.startY = sy;
+            pointer.pan0X = view.panX; pointer.pan0Y = view.panY;
+            pointer.t0 = performance.now();
+        }
+
+        function onPointerMove(e) {
+            if (!pointer.touches.has(e.pointerId)) return;
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const sx = (e.clientX - rect.left) * dpr;
+            const sy = (e.clientY - rect.top) * dpr;
+            pointer.touches.set(e.pointerId, { x: sx, y: sy });
+
+            if (pointer.touches.size === 2 && pointer.pinch0) {
+                const pts = [...pointer.touches.values()];
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                const midX = (pts[0].x + pts[1].x) / 2;
+                const midY = (pts[0].y + pts[1].y) / 2;
+
+                const scale = dist / pointer.pinch0.dist;
+                const z0 = pointer.pinch0.zoom;
+                const z1 = clamp(z0 * scale, 0.2, 10);
+
+                const wx = (pointer.pinch0.midX - pointer.pinch0.panX) / z0;
+                const wy = (pointer.pinch0.midY - pointer.pinch0.panY) / z0;
+
+                view.zoom = z1;
+                view.panX = midX - wx * z1;
+                view.panY = midY - wy * z1;
+
                 requestDraw();
-            }
-            function prevCell() {
-                if (!seq.length) return;
-                seqPos = clampInt(seqPos - 1, 0, seq.length - 1);
-                cursor = seq[seqPos];
-                centerOnCell(cursor);
-                setStatus(`色 ${activePal + 1}：定位到第 ${seqPos + 1}/${seq.length} 个`);
-                requestDraw();
+                return;
             }
 
-            function toggleDoneAndAdvance(index) {
-                if (index < 0) return;
-                done[index] = done[index] ? 0 : 1;
-                updateOneCellInPattern(index);
-                rebuildCounts();
-                renderPalette();
-                // rebuild seq because remain changed
-                buildSequenceForActiveColor(false);
-                // 如果当前格子刚刚被完成，自动跳到下一格（更符合你的节奏）
-                if (done[index] && seq.length) {
-                    // cursor 可能还指向这个已完成格子，需要把它从 seq 里剔除后移动
-                    buildSequenceForActiveColor(true);
-                }
-                saveProgress();
-                requestDraw();
-            }
+            if (!pointer.down) return;
+            const dx = sx - pointer.startX, dy = sy - pointer.startY;
+            if (Math.abs(dx) + Math.abs(dy) > 4) pointer.moved = true;
+            view.panX = pointer.pan0X + dx;
+            view.panY = pointer.pan0Y + dy;
+            requestDraw();
+        }
 
-            // ---------- 生成图案：从图片缩放到 ROWS×COLS，然后 KMeans 量化 ----------
-            async function generateFromImage() {
-                if (!img) { setStatus('请先选择图片'); return; }
+        function onPointerUp(e) {
+            pointer.touches.delete(e.pointerId);
+            if (pointer.touches.size < 2) pointer.pinch0 = null;
+            if (!pointer.down) return;
+            pointer.down = false;
 
-                ROWS = clampInt(parseInt(el.rows.value, 10), 1, 400);
-                COLS = clampInt(parseInt(el.cols.value, 10), 1, 400);
-                el.rows.value = ROWS; el.cols.value = COLS;
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const sx = (e.clientX - rect.left) * dpr;
+            const sy = (e.clientY - rect.top) * dpr;
+            const dt = performance.now() - pointer.t0;
 
-                const K = clampInt(parseInt(el.k.value, 10), 2, 64);
-                el.k.value = K;
-
-                setStatus('缩放采样中…');
-
-                // 1) draw image into small canvas (COLS×ROWS)
-                const s = document.createElement('canvas');
-                s.width = COLS; s.height = ROWS;
-                const sctx = s.getContext('2d', { willReadFrequently: true });
-                sctx.imageSmoothingEnabled = true;
-                sctx.drawImage(img, 0, 0, COLS, ROWS);
-                const data = sctx.getImageData(0, 0, COLS, ROWS).data;
-
-                // 2) build samples (RGB)
-                const pixels = new Float32Array(ROWS * COLS * 3);
-                for (let i = 0; i < ROWS * COLS; i++) {
-                    pixels[i * 3] = data[i * 4];
-                    pixels[i * 3 + 1] = data[i * 4 + 1];
-                    pixels[i * 3 + 2] = data[i * 4 + 2];
-                }
-
-                setStatus(`颜色量化中…（K=${K}）`);
-                const { centers, labels } = await kmeansQuantize(pixels, K);
-
-                // 3) build palette + idxMap
-                palette = centers.map(c => ({ r: Math.round(c[0]), g: Math.round(c[1]), b: Math.round(c[2]), count: 0, remain: 0 }));
-                idxMap = new Uint16Array(ROWS * COLS);
-                for (let i = 0; i < labels.length; i++) idxMap[i] = labels[i];
-
-                done = loadProgressOrInit();
-                rebuildCounts();
-
-                // 4) re-order palette by remain desc (optional)
-                //    (同时重映射 idxMap)
-                remapPaletteByRemain();
-
-                // 5) build render buffers
-                buildPatternCanvas();
-
-                activePal = 0;
-                renderPalette();
-                fitToView();
-                buildSequenceForActiveColor(true);
-                requestDraw();
-                setStatus(`完成：${ROWS}×${COLS}，${palette.length} 色。选色 → “下一格”逐个定位`);
-            }
-
-            function remapPaletteByRemain() {
-                const order = palette.map((p, i) => ({ i, remain: p.remain })).sort((a, b) => b.remain - a.remain);
-                const mapOldToNew = new Map(order.map((o, newI) => [o.i, newI]));
-                const newPal = order.map(o => palette[o.i]);
-                const newIdx = new Uint16Array(idxMap.length);
-                for (let i = 0; i < idxMap.length; i++) newIdx[i] = mapOldToNew.get(idxMap[i]);
-                palette = newPal;
-                idxMap = newIdx;
-            }
-
-            // 简易 k-means（对 100×100 这类规模很够用）
-            async function kmeansQuantize(pixels, K) {
-                const n = pixels.length / 3;
-
-                // 初始化：随机选 K 个像素做中心
-                const centers = [];
-                for (let k = 0; k < K; k++) {
-                    const idx = (Math.random() * n) | 0;
-                    centers.push([pixels[idx * 3], pixels[idx * 3 + 1], pixels[idx * 3 + 2]]);
-                }
-
-                const labels = new Uint16Array(n);
-                const iters = 10;
-
-                for (let it = 0; it < iters; it++) {
-                    // assign
-                    for (let i = 0; i < n; i++) {
-                        const r = pixels[i * 3], g = pixels[i * 3 + 1], b = pixels[i * 3 + 2];
-                        let best = 0, bestD = 1e18;
-                        for (let k = 0; k < K; k++) {
-                            const c = centers[k];
-                            const dr = r - c[0], dg = g - c[1], db = b - c[2];
-                            const d = dr * dr + dg * dg + db * db;
-                            if (d < bestD) { bestD = d; best = k; }
-                        }
-                        labels[i] = best;
-                    }
-
-                    // update
-                    const sr = new Float64Array(K);
-                    const sg = new Float64Array(K);
-                    const sb = new Float64Array(K);
-                    const cnt = new Uint32Array(K);
-
-                    for (let i = 0; i < n; i++) {
-                        const k = labels[i];
-                        sr[k] += pixels[i * 3];
-                        sg[k] += pixels[i * 3 + 1];
-                        sb[k] += pixels[i * 3 + 2];
-                        cnt[k]++;
-                    }
-
-                    for (let k = 0; k < K; k++) {
-                        if (cnt[k] === 0) {
-                            const idx = (Math.random() * n) | 0;
-                            centers[k] = [pixels[idx * 3], pixels[idx * 3 + 1], pixels[idx * 3 + 2]];
-                        } else {
-                            centers[k] = [sr[k] / cnt[k], sg[k] / cnt[k], sb[k] / cnt[k]];
-                        }
-                    }
-
-                    setStatus(`颜色量化中…迭代 ${it + 1}/${iters}`);
-                    // 让 UI 有机会刷新
-                    await new Promise(r => setTimeout(r, 0));
-                }
-
-                return { centers, labels };
-            }
-
-            // ---------- 文件加载 ----------
-            el.file.addEventListener('change', async (e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                img = await fileToImage(f);
-                setStatus(`已载入图片：${img.width}×${img.height}。点击“生成图案”。`);
-            });
-
-            function fileToImage(file) {
-                return new Promise((res, rej) => {
-                    const url = URL.createObjectURL(file);
-                    const im = new Image();
-                    im.onload = () => { URL.revokeObjectURL(url); res(im); };
-                    im.onerror = rej;
-                    im.src = url;
-                });
-            }
-
-            // ---------- 交互：缩放/拖拽/点击 ----------
-            el.c.addEventListener('wheel', (e) => {
-                if (!idxMap) return;
-                e.preventDefault();
-                const r = el.c.getBoundingClientRect();
-                const cx = e.clientX - r.left;
-                const cy = e.clientY - r.top;
-                zoomAt(cx, cy, Math.exp(-e.deltaY * 0.0012));
-            }, { passive: false });
-
-            el.c.addEventListener('pointerdown', (e) => {
-                el.c.setPointerCapture(e.pointerId);
-                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-                if (pointers.size === 1) {
-                    dragging = true;
-                    last = { x: e.clientX, y: e.clientY };
-                }
-            });
-
-            el.c.addEventListener('pointermove', (e) => {
-                if (!pointers.has(e.pointerId)) return;
-                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-                if (!idxMap) return;
-
-                if (pointers.size === 2) {
-                    const arr = Array.from(pointers.values());
-                    const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
-                    if (!el.c._pinch) {
-                        el.c._pinch = { d0: d, s0: view.scale, cx: (arr[0].x + arr[1].x) / 2, cy: (arr[0].y + arr[1].y) / 2 };
-                    }
-                    const f = d / el.c._pinch.d0;
-                    const target = clamp(el.c._pinch.s0 * f, 2, 80);
-                    const r = el.c.getBoundingClientRect();
-                    const cx = el.c._pinch.cx - r.left;
-                    const cy = el.c._pinch.cy - r.top;
-                    const before = canvasToCell(cx, cy);
-                    view.scale = target;
-                    const after = cellToCanvas(before.x, before.y);
-                    view.ox += (cx - after.x / devicePixelRatio);
-                    view.oy += (cy - after.y / devicePixelRatio);
-                    requestDraw();
-                    return;
-                } else {
-                    el.c._pinch = null;
-                }
-
-                if (!dragging) return;
-                const dx = e.clientX - last.x;
-                const dy = e.clientY - last.y;
-                last = { x: e.clientX, y: e.clientY };
-                view.ox += dx;
-                view.oy += dy;
-                requestDraw();
-            });
-
-            el.c.addEventListener('pointerup', (e) => {
-                pointers.delete(e.pointerId);
-                if (pointers.size < 2) el.c._pinch = null;
-
-                if (!idxMap) { dragging = false; return; }
-
-                // 点击（非拖拽）
-                const r = el.c.getBoundingClientRect();
-                const cx = e.clientX - r.left;
-                const cy = e.clientY - r.top;
-                const p = canvasToCell(cx, cy);
-                const c = Math.floor(p.x);
-                const rr = Math.floor(p.y);
-
-                // 很小移动也当点击
-                dragging = false;
-
-                if (c < 0 || c >= COLS || rr < 0 || rr >= ROWS) return;
-                const index = rr * COLS + c;
-
-                if (editMode) {
-                    // 改色：把这个格子改成当前选中的颜色
-                    idxMap[index] = activePal;
-                    updateOneCellInPattern(index);
-                    rebuildCounts();
-                    renderPalette();
-                    buildSequenceForActiveColor(true);
-                    saveProgress();
-                    cursor = index;
-                    requestDraw();
-                    return;
-                }
-
-                // 标记 done / undo
-                cursor = index;
-                toggleDoneAndAdvance(index);
-            });
-
-            // ---------- 顶部按钮 ----------
-            el.gen.onclick = generateFromImage;
-
-            el.fit.onclick = () => fitToView();
-            el.zoomIn.onclick = () => {
-                const r = el.c.getBoundingClientRect();
-                zoomAt(r.width / 2, r.height / 2, 1.15);
-            };
-            el.zoomOut.onclick = () => {
-                const r = el.c.getBoundingClientRect();
-                zoomAt(r.width / 2, r.height / 2, 1 / 1.15);
-            };
-
-            el.nextCell.onclick = () => nextCell();
-            el.prevCell.onclick = () => prevCell();
-            el.markDone.onclick = () => {
-                if (cursor < 0) buildSequenceForActiveColor(true);
-                if (cursor >= 0) {
-                    if (!done[cursor]) done[cursor] = 1;
-                    updateOneCellInPattern(cursor);
-                    rebuildCounts();
-                    renderPalette();
-                    saveProgress();
-                    buildSequenceForActiveColor(true);
+            if (!pointer.moved && dt < 300 && state.isReady) {
+                const hit = canvasToWorld(sx, sy);
+                if (hit.x >= 0 && hit.x < state.gridW && hit.y >= 0 && hit.y < state.gridH) {
+                    state.lastPickedCell = { x: hit.x, y: hit.y };
+                    state.activeTarget = { x: hit.x, y: hit.y };
+                    updateMeta();
                     requestDraw();
                 }
-            };
-
-            el.order.onchange = () => buildSequenceForActiveColor(true);
-
-            el.toggleEdit.onclick = () => {
-                editMode = !editMode;
-                el.toggleEdit.textContent = `编辑模式：${editMode ? '开' : '关'}`;
-                el.tapInfo.textContent = editMode ? '改色' : '标记完成';
-                setStatus(editMode ? '编辑模式：点格子改成当前颜色' : '定位模式：点格子标记完成');
-            };
-
-            el.clearDone.onclick = () => {
-                if (!done) return;
-                done.fill(0);
-                // rebuild done canvas
-                buildPatternCanvas();
-                rebuildCounts();
-                renderPalette();
-                buildSequenceForActiveColor(true);
-                saveProgress();
-                setStatus('已清空进度');
-                requestDraw();
-            };
-
-            // ---------- 快捷键 ----------
-            window.addEventListener('keydown', (e) => {
-                if (!idxMap) return;
-                if (e.key === 'n' || e.key === 'N') { nextCell(); e.preventDefault(); }
-                if (e.key === 'p' || e.key === 'P') { prevCell(); e.preventDefault(); }
-                if (e.key === ' ') {
-                    e.preventDefault();
-                    if (cursor < 0) buildSequenceForActiveColor(true);
-                    if (cursor >= 0) {
-                        if (!done[cursor]) done[cursor] = 1;
-                        updateOneCellInPattern(cursor);
-                        rebuildCounts(); renderPalette(); saveProgress();
-                        buildSequenceForActiveColor(true);
-                        requestDraw();
-                    }
-                }
-                if (e.key === 'e' || e.key === 'E') {
-                    editMode = !editMode;
-                    el.toggleEdit.textContent = `编辑模式：${editMode ? '开' : '关'}`;
-                    el.tapInfo.textContent = editMode ? '改色' : '标记完成';
-                    e.preventDefault();
-                }
-            });
-
-            // ---------- 进度保存（done + 当前设置） ----------
-            function key() {
-                return `beads_progress_v1_${ROWS}x${COLS}`;
             }
-            function loadProgressOrInit() {
-                try {
-                    const s = localStorage.getItem(key());
-                    if (!s) return new Uint8Array(ROWS * COLS);
-                    const obj = JSON.parse(s);
-                    if (!obj || !obj.done || obj.done.length !== ROWS * COLS) return new Uint8Array(ROWS * COLS);
-                    return Uint8Array.from(obj.done);
-                } catch {
-                    return new Uint8Array(ROWS * COLS);
-                }
-            }
-            function saveProgress() {
-                try {
-                    localStorage.setItem(key(), JSON.stringify({ done: Array.from(done) }));
-                } catch { }
-            }
+        }
 
-            // init
-            resizeCanvas();
-        })();
+        function onWheel(e) {
+            if (!state.isReady) return;
+            e.preventDefault();
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const sx = (e.clientX - rect.left) * dpr;
+            const sy = (e.clientY - rect.top) * dpr;
+
+            const zoomFactor = Math.exp(-e.deltaY * 0.0012);
+            const z0 = view.zoom;
+            const z1 = clamp(z0 * zoomFactor, 0.2, 10);
+
+            const wx = (sx - view.panX) / z0;
+            const wy = (sy - view.panY) / z0;
+
+            view.zoom = z1;
+            view.panX = sx - wx * z1;
+            view.panY = sy - wy * z1;
+            requestDraw();
+        }
+
+        el.view.addEventListener('pointerdown', onPointerDown);
+        el.view.addEventListener('pointermove', onPointerMove);
+        el.view.addEventListener('pointerup', onPointerUp);
+        el.view.addEventListener('pointercancel', onPointerUp);
+        el.view.addEventListener('wheel', onWheel, { passive: false });
+
+        /**********************
+         * 15) Wire UI events
+         **********************/
+        el.colorSearch.addEventListener('input', refreshColorLists);
+        el.pickSearch.addEventListener('input', refreshPickList);
+        el.editSearch.addEventListener('input', refreshEditList);
+
+        el.showCode.addEventListener('change', () => { state.showCode = el.showCode.checked; requestDraw() });
+        el.onlyActiveColor.addEventListener('change', () => { state.onlyActiveColor = el.onlyActiveColor.checked; requestDraw() });
+
+        el.limitSehao.addEventListener('change', () => {
+            rebuildPaletteMaps();
+            el.statusPill.textContent = '已切换色号限制（需重新导入）';
+        });
+
+        el.fitBtn.addEventListener('click', fitToScreen);
+        el.resetViewBtn.addEventListener('click', resetView);
+        el.zoomInBtn.addEventListener('click', () => { view.zoom = clamp(view.zoom * 1.15, 0.2, 10); requestDraw() });
+        el.zoomOutBtn.addEventListener('click', () => { view.zoom = clamp(view.zoom / 1.15, 0.2, 10); requestDraw() });
+
+        el.nextBtn.addEventListener('click', nextCell);
+        el.prevBtn.addEventListener('click', prevCell);
+        el.doneBtn.addEventListener('click', markDoneCurrent);
+        el.undoBtn.addEventListener('click', undoDone);
+
+        el.mNext.addEventListener('click', nextCell);
+        el.mPrev.addEventListener('click', prevCell);
+        el.mDone.addEventListener('click', markDoneCurrent);
+        el.mUndo.addEventListener('click', undoDone);
+        el.mFit.addEventListener('click', fitToScreen);
+        el.mPickColor.addEventListener('click', () => openOverlay(el.pickOverlay));
+
+        el.editCellBtn.addEventListener('click', openEditOverlay);
+        el.editClose.addEventListener('click', () => closeOverlay(el.editOverlay));
+
+        el.cropClose.addEventListener('click', () => closeOverlay(el.cropOverlay));
+        el.cropSkip.addEventListener('click', () => { closeOverlay(el.cropOverlay); buildFromImage(crop.img); });
+        el.cropApply.addEventListener('click', applyCropToImage);
+        el.cropCanvas.addEventListener('pointerdown', onCropPointerDown);
+        el.cropCanvas.addEventListener('pointermove', onCropPointerMove);
+        el.cropCanvas.addEventListener('pointerup', onCropPointerUp);
+        el.cropCanvas.addEventListener('pointercancel', onCropPointerUp);
+
+        el.pickClose.addEventListener('click', () => closeOverlay(el.pickOverlay));
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeOverlay(el.cropOverlay);
+                closeOverlay(el.pickOverlay);
+                closeOverlay(el.editOverlay);
+            }
+        });
+
+        /**********************
+         * 16) Import handlers
+         **********************/
+        el.allowedFile.addEventListener('change', async () => {
+            const f = el.allowedFile.files?.[0];
+            if (!f) return;
+            const text = await f.text();
+            try {
+                rebuildPaletteMaps();
+                state.allowedList = parseAllowedCodesCSV(text);
+                rebuildPaletteMaps();
+                el.statusPill.textContent = `已载入 sehao：${state.allowedList.length} 个色号（需重新导入）`;
+            } catch (err) {
+                el.statusPill.textContent = 'sehao 解析失败';
+                alert(err.message || String(err));
+            }
+        });
+
+        el.imgFile.addEventListener('change', () => {
+            const f = el.imgFile.files?.[0];
+            if (!f) return;
+            const url = URL.createObjectURL(f);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); openCrop(img); };
+            img.src = url;
+            el.statusPill.textContent = '已选择图片（待裁剪）';
+        });
+
+        el.csvFile.addEventListener('change', async () => {
+            const f = el.csvFile.files?.[0];
+            if (!f) return;
+            const text = await f.text();
+            try {
+                const { W, H, rows } = parseCodeCSV(text);
+                el.gridW.value = W; el.gridH.value = H;
+                el.autoFit.checked = false;
+                buildFromCSV(rows, W, H);
+            } catch (err) {
+                el.statusPill.textContent = 'CSV 解析失败';
+                alert(err.message || String(err));
+            }
+        });
+
+        /**********************
+         * 17) Init
+         **********************/
+        function resizeViewCanvas() {
+            const rect = el.view.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            el.view.width = Math.max(1, Math.floor(rect.width * dpr));
+            el.view.height = Math.max(1, Math.floor(rect.height * dpr));
+            requestDraw();
+        }
+        resizeViewCanvas();
+        requestDraw();
+
     </script>
 </body>
 
