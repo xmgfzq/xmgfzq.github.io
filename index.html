@@ -34,6 +34,23 @@
             overflow: hidden;
         }
 
+        /* ====== 防止 iOS / 平板：点输入框放大 & 连点按钮放大 ====== */
+        input,
+        select,
+        textarea {
+            font-size: 16px;
+        }
+
+        button,
+        .btn,
+        .fabBtn,
+        .fabMain,
+        .colorItem,
+        .pill,
+        .chip {
+            touch-action: manipulation;
+        }
+
         /* ====== 上下分栏：面板在上，画布在下（不再左右分栏） ====== */
         .app {
             height: 100dvh;
@@ -43,6 +60,15 @@
             padding: 12px;
             padding-bottom: calc(12px + env(safe-area-inset-bottom));
             min-height: 0;
+        }
+
+        /* 分栏隐藏模式 */
+        body.panelHidden .app {
+            gap: 0;
+        }
+
+        body.panelHidden .side {
+            display: none !important;
         }
 
         .card {
@@ -347,11 +373,6 @@
             touch-action: none
         }
 
-        /* 不再使用 bottomBar */
-        .bottomBar {
-            display: none !important;
-        }
-
         .pill {
             font-size: 12px;
             padding: 6px 10px;
@@ -445,7 +466,6 @@
             align-items: flex-end;
             gap: 10px;
             pointer-events: none;
-            /* 外层不吃事件，里面按钮再开 */
         }
 
         .fab * {
@@ -569,12 +589,12 @@
 
                 <div class="grid2">
                     <div>
-                        <label>网格宽 W（≤100）</label>
-                        <input id="gridW" type="number" min="1" max="100" value="100">
+                        <label>网格宽 W（≤104）</label>
+                        <input id="gridW" type="number" min="1" max="104" value="52">
                     </div>
                     <div>
-                        <label>网格高 H（≤100）</label>
-                        <input id="gridH" type="number" min="1" max="100" value="100">
+                        <label>网格高 H（≤104）</label>
+                        <input id="gridH" type="number" min="1" max="104" value="52">
                     </div>
                 </div>
 
@@ -582,7 +602,7 @@
                     <input id="autoFit" type="checkbox" checked>
                     <div style="display:flex; flex-direction:column; gap:2px">
                         <b style="font-size:13px">自动按图片比例适配</b>
-                        <span style="font-size:12px; color:var(--muted)">启用时以 100 为最大边，自动算
+                        <span style="font-size:12px; color:var(--muted)">启用时以 104 为最大边，自动算
                             W/H</span>
                     </div>
                 </div>
@@ -629,13 +649,7 @@
                     </div>
                 </div>
 
-                <div class="toggle">
-                    <input id="onlyActiveColor" type="checkbox">
-                    <div style="display:flex; flex-direction:column; gap:2px">
-                        <b style="font-size:13px">只看当前颜色</b>
-                        <span style="font-size:12px; color:var(--muted)">其它颜色变淡，便于定位</span>
-                    </div>
-                </div>
+                <!-- ✅ “只看当前颜色” 已移到悬浮按钮里（这里不再放开关） -->
 
                 <div class="hr"></div>
 
@@ -688,6 +702,10 @@
     <!-- 悬浮操作（默认展开，可收起） -->
     <div class="fab" id="fab">
         <div class="fabPanel" id="fabPanel">
+            <button class="fabBtn" id="fabPanelToggle" type="button">🧾 隐藏面板</button>
+            <button class="fabBtn" id="fabOnly" type="button">👁️ 只看当前色：关</button>
+            <button class="fabBtn" id="fabCenter" type="button">🎯 当前格居中</button>
+
             <button class="fabBtn primary" id="fabPick" type="button">🎨 选颜色</button>
             <button class="fabBtn" id="fabFit" type="button">🧲 适配</button>
             <button class="fabBtn" id="fabPrev" type="button">⬅️ 上一格</button>
@@ -822,6 +840,11 @@
     </div>
 
     <script>
+        /**********************
+         * 0) 常量：网格最大 104
+         **********************/
+        const MAX_GRID = 104;
+
         /**********************
          * 1) 你的 mard 色号表：name -> hex
          **********************/
@@ -1036,17 +1059,20 @@
         const state = {
             gridW: 0,
             gridH: 0,
-            cells: null,            // Int16Array, value = usedColors index, -1 = empty
-            usedColors: [],         // [{code, hex}]
-            usedCounts: new Map(),  // code -> count
-            codeToHex: new Map(),   // palette map
+            cells: null,
+            usedColors: [],
+            usedCounts: new Map(),
+            codeToHex: new Map(),
             activeCode: null,
-            activeTarget: null,     // {x,y}
+            activeTarget: null,
             history: [],
             done: new Set(),
             doneHistory: [],
             lastPickedCell: null,
-            onlyActiveColor: false,
+
+            // ✅ “只看当前色” 改为悬浮按钮控制 + 记忆
+            onlyActiveColor: (localStorage.getItem('only_active_color') === '1'),
+
             showCode: true,
             allowedSet: null,
             allowedList: null,
@@ -1076,7 +1102,6 @@
             bulkBtn: document.getElementById('bulkBtn'),
 
             showCode: document.getElementById('showCode'),
-            onlyActiveColor: document.getElementById('onlyActiveColor'),
 
             nextBtn: document.getElementById('nextBtn'),
             prevBtn: document.getElementById('prevBtn'),
@@ -1146,6 +1171,11 @@
             fabUndo: document.getElementById('fabUndo'),
             fabBulk: document.getElementById('fabBulk'),
             fabExport: document.getElementById('fabExport'),
+
+            // ✅ new fab buttons
+            fabOnly: document.getElementById('fabOnly'),
+            fabCenter: document.getElementById('fabCenter'),
+            fabPanelToggle: document.getElementById('fabPanelToggle'),
         };
 
         /**********************
@@ -1193,6 +1223,76 @@
         }
 
         /**********************
+         * ✅ 平板连点按钮放大：仅对按钮阻止 double-tap zoom
+         **********************/
+        function installNoDoubleTapZoomForButtons() {
+            const targets = document.querySelectorAll('button, .btn, .fabBtn, .fabMain');
+            targets.forEach(t => {
+                let last = 0;
+                t.addEventListener('touchend', (e) => {
+                    const now = Date.now();
+                    if (now - last <= 320) {
+                        e.preventDefault();
+                    }
+                    last = now;
+                }, { passive: false });
+            });
+        }
+
+        /**********************
+         * ✅ 顶部分栏显示/隐藏（记忆）
+         **********************/
+        function setPanelHidden(hidden) {
+            document.body.classList.toggle('panelHidden', !!hidden);
+            localStorage.setItem('panel_hidden', hidden ? '1' : '0');
+            updateFabPanelToggleText();
+
+            // 面板高度变化会影响 canvas 尺寸：重算并尽量适配
+            setTimeout(() => {
+                resizeViewCanvas();
+                if (state.isReady) fitToScreen();
+            }, 50);
+        }
+        function updateFabPanelToggleText() {
+            const hidden = document.body.classList.contains('panelHidden');
+            el.fabPanelToggle.textContent = hidden ? '🧾 显示面板' : '🧾 隐藏面板';
+            el.fabPanelToggle.classList.toggle('primary', !hidden);
+        }
+
+        /**********************
+         * ✅ “只看当前色” 悬浮按钮
+         **********************/
+        function updateFabOnlyText() {
+            const on = !!state.onlyActiveColor;
+            el.fabOnly.textContent = on ? '👁️ 只看当前色：开' : '👁️ 只看当前色：关';
+            el.fabOnly.classList.toggle('primary', on);
+        }
+        function toggleOnlyActiveColor() {
+            state.onlyActiveColor = !state.onlyActiveColor;
+            localStorage.setItem('only_active_color', state.onlyActiveColor ? '1' : '0');
+            updateFabOnlyText();
+            requestDraw();
+        }
+
+        /**********************
+         * ✅ 当前高亮格居中
+         **********************/
+        function centerOnCurrentTarget() {
+            if (!state.isReady) return alert('请先导入图纸');
+            const t = state.activeTarget || state.lastPickedCell;
+            if (!t) return alert('还没有选中/高亮任何格子');
+            const cw = el.view.width, ch = el.view.height;
+            const z = view.zoom, cell = view.baseCell;
+
+            const wx = (t.x + 0.5) * cell;
+            const wy = (t.y + 0.5) * cell;
+
+            view.panX = cw / 2 - wx * z;
+            view.panY = ch / 2 - wy * z;
+            requestDraw();
+        }
+
+        /**********************
          * Palette maps + allowed list
          **********************/
         function rebuildPaletteMaps() {
@@ -1227,7 +1327,7 @@
             const H = rows.length;
             const W = Math.max(...rows.map(r => r.length));
             if (W < 1 || H < 1) throw new Error('CSV 为空或格式不对');
-            if (W > 100 || H > 100) throw new Error('CSV 网格超过 100×100');
+            if (W > MAX_GRID || H > MAX_GRID) throw new Error(`CSV 网格超过 ${MAX_GRID}×${MAX_GRID}`);
             for (const r of rows) { while (r.length < W) r.push(''); }
             return { W, H, rows };
         }
@@ -1523,16 +1623,16 @@
             });
             if (cand.length === 0) throw new Error('候选色卡为空（检查 sehao 限制）');
 
-            let W = parseInt(el.gridW.value, 10) || 100;
-            let H = parseInt(el.gridH.value, 10) || 100;
-            W = clamp(W, 1, 100); H = clamp(H, 1, 100);
+            let W = parseInt(el.gridW.value, 10) || 52;
+            let H = parseInt(el.gridH.value, 10) || 52;
+            W = clamp(W, 1, MAX_GRID); H = clamp(H, 1, MAX_GRID);
 
             if (el.autoFit.checked) {
                 const iw = img.naturalWidth, ih = img.naturalHeight;
                 if (iw >= ih) {
-                    H = clamp(Math.round(W * ih / iw), 1, 100);
+                    H = clamp(Math.round(W * ih / iw), 1, MAX_GRID);
                 } else {
-                    W = clamp(Math.round(H * iw / ih), 1, 100);
+                    W = clamp(Math.round(H * iw / ih), 1, MAX_GRID);
                 }
                 el.gridW.value = W; el.gridH.value = H;
             }
@@ -1613,9 +1713,9 @@
          **********************/
         function syncUIAfterBuild() {
             state.showCode = el.showCode.checked;
-            state.onlyActiveColor = el.onlyActiveColor.checked;
             el.statusPill.textContent = '已导入';
             el.metaGrid.textContent = `网格：${state.gridW} × ${state.gridH}`;
+            updateFabOnlyText();
             refreshColorLists();
             updateMeta();
             requestDraw();
@@ -1864,7 +1964,6 @@
             updateMeta();
             requestDraw();
 
-            // 完成后自动切到下一个仍有剩余的颜色，并定位到下一格
             advanceToNextColorIfNeeded();
             nextCell();
         }
@@ -2227,7 +2326,6 @@
             const q = (el.bulkSearch.value || '').trim().toUpperCase();
             el.bulkList.innerHTML = '';
 
-            // 按数量降序
             const arr = [...state.usedColors].slice().sort((a, b) => (state.usedCounts.get(b.code) || 0) - (state.usedCounts.get(a.code) || 0));
 
             for (const u of arr) {
@@ -2265,12 +2363,11 @@
          * Export
          **********************/
         const exportState = {
-            includeSet: new Set(), // 选中导出的色号
+            includeSet: new Set(),
         };
 
         function openExportOverlay() {
             if (!state.isReady) { alert('请先导入图纸'); return; }
-            // 默认全选
             exportState.includeSet = new Set(state.usedColors.map(u => u.code));
             el.exportSearch.value = '';
             el.exportBlankExcluded.checked = true;
@@ -2417,18 +2514,16 @@
             const blankExcluded = el.exportBlankExcluded.checked;
             const W = state.gridW, H = state.gridH;
 
-            const cell = 20; // 导出像素格大小
+            const cell = 20;
             const out = document.createElement('canvas');
             out.width = W * cell;
             out.height = H * cell;
             const g = out.getContext('2d');
 
-            // 背景
             g.clearRect(0, 0, out.width, out.height);
             g.fillStyle = '#0b0c10';
             g.fillRect(0, 0, out.width, out.height);
 
-            // 画格子
             for (let y = 0; y < H; y++) {
                 for (let x = 0; x < W; x++) {
                     const k = y * W + x;
@@ -2437,7 +2532,6 @@
                     const code = state.usedColors[idx].code;
 
                     if (!includeSet.has(code) && blankExcluded) {
-                        // 留空：画成背景略亮
                         g.fillStyle = 'rgba(255,255,255,0.04)';
                         g.fillRect(x * cell, y * cell, cell, cell);
                         continue;
@@ -2454,7 +2548,6 @@
                 }
             }
 
-            // 网格线
             g.strokeStyle = 'rgba(0,0,0,0.35)';
             g.lineWidth = 1;
             for (let x = 0; x <= W; x++) {
@@ -2486,7 +2579,6 @@
         el.exportSearch.addEventListener('input', refreshExportList);
 
         el.showCode.addEventListener('change', () => { state.showCode = el.showCode.checked; requestDraw() });
-        el.onlyActiveColor.addEventListener('change', () => { state.onlyActiveColor = el.onlyActiveColor.checked; requestDraw() });
 
         el.limitSehao.addEventListener('change', () => {
             rebuildPaletteMaps();
@@ -2547,6 +2639,18 @@
             setFabCollapsed(!el.fab.classList.contains('collapsed'));
         });
 
+        // ✅ FAB：面板显示/隐藏
+        el.fabPanelToggle.addEventListener('click', () => {
+            const hidden = document.body.classList.contains('panelHidden');
+            setPanelHidden(!hidden);
+        });
+
+        // ✅ FAB：只看当前色
+        el.fabOnly.addEventListener('click', toggleOnlyActiveColor);
+
+        // ✅ FAB：当前格居中
+        el.fabCenter.addEventListener('click', centerOnCurrentTarget);
+
         // FAB 行为
         el.fabPick.addEventListener('click', () => { if (!state.isReady) return alert('请先导入图纸'); openOverlay(el.pickOverlay); });
         el.fabFit.addEventListener('click', fitToScreen);
@@ -2565,7 +2669,6 @@
                 closeOverlay(el.bulkOverlay);
                 closeOverlay(el.exportOverlay);
             }
-            // 快捷键（可选）
             if (e.key === 'n' || e.key === 'N') nextCell();
             if (e.key === 'p' || e.key === 'P') prevCell();
             if (e.key === 'd' || e.key === 'D') markDoneCurrent();
@@ -2618,6 +2721,17 @@
         /**********************
          * Init
          **********************/
+        // 1) 安装按钮防连点放大
+        installNoDoubleTapZoomForButtons();
+
+        // 2) 还原面板隐藏状态
+        const panelHidden = localStorage.getItem('panel_hidden') === '1';
+        setPanelHidden(panelHidden);
+
+        // 3) 更新 FAB 文案
+        updateFabOnlyText();
+
+        // 4) canvas 初始化
         resizeViewCanvas();
         requestDraw();
     </script>
