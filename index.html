@@ -558,7 +558,29 @@
             height: 18px;
             flex: 0 0 auto;
         }
-    </style>
+    
+        /* ✅ 批量点选完成：底部确认条 */
+        .multiBar{
+            position:fixed;
+            left:50%;
+            bottom:16px;
+            transform:translateX(-50%);
+            z-index:99;
+            width:min(560px,92vw);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:10px 12px;
+            border-radius:14px;
+            background:rgba(20,20,26,.92);
+            border:1px solid rgba(255,255,255,.12);
+            box-shadow:0 10px 30px rgba(0,0,0,.35);
+            backdrop-filter:blur(10px);
+        }
+        #filterPill{ white-space:nowrap; }
+
+</style>
 </head>
 
 <body>
@@ -569,7 +591,7 @@
                     <b>拼豆逐格高亮助手</b>
                     <small>导入图纸 → 选颜色 → 下一格/完成（不跳视图）</small>
                 </div>
-                <div class="chip">Mard 色号</div>
+                <div class="chip" id="paletteChip">Mard 色号</div>
             </div>
 
             <div class="content">
@@ -578,6 +600,19 @@
                         <label>导入图纸图片（先裁剪）</label>
                         <input id="imgFile" type="file" accept="image/*">
                     </div>
+                </div>
+
+                <!-- ✅ 选择色号表（来自 JS） -->
+                <div class="row">
+                    <div style="flex:1">
+                        <label>色号表（默认 mard220）</label>
+                        <select id="paletteSelect"></select>
+                    </div>
+                </div>
+
+                <div class="row" style="align-items:flex-end; gap:10px">
+                    <button class="btn small" id="filterBtn" type="button">识别颜色限制</button>
+                    <div class="pill" id="filterPill" style="margin:0">全部</div>
                 </div>
 
                 <div class="row">
@@ -711,11 +746,22 @@
             <button class="fabBtn" id="fabPrev" type="button">⬅️ 上一格</button>
             <button class="fabBtn primary" id="fabNext" type="button">➡️ 下一格</button>
             <button class="fabBtn ok" id="fabDone" type="button">✅ 完成此格</button>
+            <button class="fabBtn ok" id="fabMulti" type="button">🧩 批量点选完成</button>
             <button class="fabBtn danger" id="fabUndo" type="button">↩️ 撤销</button>
             <button class="fabBtn ok" id="fabBulk" type="button">⚡ 一键完成色号</button>
             <button class="fabBtn" id="fabExport" type="button">📦 导出</button>
         </div>
         <button class="fabMain" id="fabMain" type="button">≡ 操作面板</button>
+    </div>
+
+
+    <!-- 批量点选完成：底部确认条（仅在“批量模式”显示） -->
+    <div class="multiBar" id="multiBar" style="display:none">
+        <div class="multiText">已选 <b id="multiCount">0</b> 格</div>
+        <div style="display:flex; gap:8px">
+            <button class="btn small ok" id="multiConfirm" type="button">标记完成</button>
+            <button class="btn small" id="multiCancel" type="button">退出</button>
+        </div>
     </div>
 
     <!-- 裁剪 -->
@@ -793,6 +839,74 @@
         </div>
     </div>
 
+    
+    <!-- 识别颜色限制（按 series / 按色号） -->
+    <div class="overlay" id="filterOverlay">
+        <div class="modal card" style="width:min(860px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>识别颜色限制</b>
+                    <small>限制识别时允许匹配的色号（会与 sehao.csv 限制取交集）</small>
+                </div>
+                <button class="btn small" id="filterClose" type="button">关闭</button>
+            </div>
+
+            <div class="modalBody" style="min-height:0">
+                <div class="grid2" style="margin-bottom:10px">
+                    <div>
+                        <label>限制模式</label>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
+                                <input type="radio" name="filterMode" id="filterModeNone" checked> 不限制
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
+                                <input type="radio" name="filterMode" id="filterModeSeries"> 按系列（series）
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
+                                <input type="radio" name="filterMode" id="filterModeName"> 按色号（name）
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label>当前色号表</label>
+                        <div class="hint" id="filterPaletteHint" style="margin-top:8px">-</div>
+                    </div>
+                </div>
+
+                <div id="filterBySeries" class="card" style="padding:12px; margin:10px 0">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                        <b style="font-size:14px">选择系列（series）</b>
+                        <div style="display:flex; gap:8px">
+                            <button class="btn small" id="filterSeriesAll" type="button">全选</button>
+                            <button class="btn small" id="filterSeriesNone" type="button">全不选</button>
+                        </div>
+                    </div>
+                    <div class="list" id="filterSeriesList" style="max-height:32vh; margin-top:10px"></div>
+                </div>
+
+                <div id="filterByName" class="card" style="padding:12px; margin:10px 0">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                        <b style="font-size:14px">选择色号（name）</b>
+                        <div style="display:flex; gap:8px">
+                            <button class="btn small" id="filterNameAll" type="button">全选</button>
+                            <button class="btn small" id="filterNameNone" type="button">全不选</button>
+                        </div>
+                    </div>
+                    <input id="filterNameSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）" style="margin-top:10px">
+                    <div class="list" id="filterNameList" style="max-height:32vh; margin-top:10px"></div>
+                </div>
+
+                <div class="hint">提示：修改限制后会自动重新识别（使用同一张裁剪后的图片）。</div>
+            </div>
+
+            <div class="modalFoot">
+                <button class="btn" id="filterClear" type="button">清空限制</button>
+                <button class="btn primary" id="filterApply" type="button">应用限制</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- 导出 -->
     <div class="overlay" id="exportOverlay">
         <div class="modal card" style="width:min(860px,96vw)">
@@ -809,6 +923,13 @@
                     <div>
                         <label>搜索色号（勾选列表用）</label>
                         <input id="exportSearch" type="text" placeholder="例如 A1 / C20 / M15">
+                    </div>
+                    <div>
+                        <label>PNG 导出模式</label>
+                        <select id="exportPngMode">
+                            <option value="grid_only">仅格子画</option>
+                            <option value="grid_codes_legend">格子 + 色号标注 + 下方统计</option>
+                        </select>
                     </div>
                     <div class="toggle" style="margin:0">
                         <input id="exportBlankExcluded" type="checkbox" checked>
@@ -839,7 +960,11 @@
         </div>
     </div>
 
-    <script>
+    
+    <!-- 色号表（来自独立 JS 文件） -->
+    <script src="mard_colors.js"></script>
+
+<script>
         /**********************
          * 0) 常量：网格最大 104
          **********************/
@@ -848,212 +973,35 @@
         /**********************
          * 1) 你的 mard 色号表：name -> hex
          **********************/
-        var allPalettes = new Map();
-        allPalettes.set("mard",
-            [
-                { name: 'A1', color: 'fff5ca' },
-                { name: 'A2', color: 'ffffcc' },
-                { name: 'A3', color: 'fff297' },
-                { name: 'A4', color: 'fff651' },
-                { name: 'A5', color: 'ffdb4d' },
-                { name: 'A6', color: 'fcc73b' },
-                { name: 'A7', color: 'fe8443' },
-                { name: 'A8', color: 'e5c62d' },
-                { name: 'A9', color: 'fbaa72' },
-                { name: 'A10', color: 'fd9443' },
-                { name: 'A11', color: 'ffcf7c' },
-                { name: 'A12', color: 'fdbc9e' },
-                { name: 'A14', color: 'ff7443' },
-                { name: 'A16', color: 'fff49e' },
-                { name: 'A17', color: 'fde676' },
-                { name: 'A18', color: 'ffb67b' },
-                { name: 'A19', color: 'fa9285' },
-                { name: 'A20', color: 'fee27e' },
-                { name: 'B1', color: 'eaf149' },
-                { name: 'B2', color: 'b6eb45' },
-                { name: 'B3', color: '9af5a8' },
-                { name: 'B4', color: '51ff51' },
-                { name: 'B5', color: '6fd363' },
-                { name: 'B6', color: '79ebc7' },
-                { name: 'B7', color: '3bb48b' },
-                { name: 'B8', color: '13904c' },
-                { name: 'B9', color: '28523a' },
-                { name: 'B10', color: 'ace1d9' },
-                { name: 'B11', color: '52641d' },
-                { name: 'B12', color: '206a4f' },
-                { name: 'B13', color: 'c7ff85' },
-                { name: 'B14', color: 'd0ed39' },
-                { name: 'B15', color: '205726' },
-                { name: 'B16', color: 'ccffaa' },
-                { name: 'B17', color: 'b6c130' },
-                { name: 'B18', color: 'e4f954' },
-                { name: 'B19', color: '00d0a1' },
-                { name: 'B20', color: 'c4ffd7' },
-                { name: 'B21', color: '157c74' },
-                { name: 'B22', color: '0d5349' },
-                { name: 'B23', color: '32451d' },
-                { name: 'B24', color: 'e4fb9f' },
-                { name: 'B25', color: '5c9083' },
-                { name: 'B26', color: 'a9a44e' },
-                { name: 'C1', color: 'e0ffe2' },
-                { name: 'C2', color: 'b9f6ed' },
-                { name: 'C3', color: 'a8e1fc' },
-                { name: 'C4', color: '84d2ff' },
-                { name: 'C5', color: '24b9e4' },
-                { name: 'C6', color: '78bdf8' },
-                { name: 'C7', color: '3c8aec' },
-                { name: 'C8', color: '195dc4' },
-                { name: 'C9', color: '2e26cc' },
-                { name: 'C10', color: '30d9ed' },
-                { name: 'C11', color: '00c4d0' },
-                { name: 'C12', color: '1a3758' },
-                { name: 'C13', color: 'b4d7ff' },
-                { name: 'C14', color: 'e0fff9' },
-                { name: 'C15', color: '00cbd2' },
-                { name: 'C16', color: '0a5491' },
-                { name: 'C17', color: '7be7f4' },
-                { name: 'C18', color: '264257' },
-                { name: 'C19', color: '259bb9' },
-                { name: 'C20', color: '157cbf' },
-                { name: 'C21', color: 'deeefe' },
-                { name: 'C22', color: '7fc0d4' },
-                { name: 'D1', color: 'b9cffe' },
-                { name: 'D2', color: '9ca6db' },
-                { name: 'D3', color: '224eb1' },
-                { name: 'D4', color: '2e4770' },
-                { name: 'D5', color: 'c56fb8' },
-                { name: 'D6', color: 'aa76e4' },
-                { name: 'D7', color: '7e4dc7' },
-                { name: 'D8', color: 'e0cdff' },
-                { name: 'D9', color: 'c9befd' },
-                { name: 'D10', color: '351d4f' },
-                { name: 'D11', color: 'c1c2ff' },
-                { name: 'D12', color: 'daafe4' },
-                { name: 'D13', color: 'c64dae' },
-                { name: 'D14', color: '9735b3' },
-                { name: 'D15', color: '46297d' },
-                { name: 'D16', color: 'e3e4ff' },
-                { name: 'D17', color: 'c9d9fd' },
-                { name: 'D18', color: 'b87bd5' },
-                { name: 'D19', color: 'e8cbfa' },
-                { name: 'D20', color: 'a73ae9' },
-                { name: 'D21', color: '8b339b' },
-                { name: 'D22', color: '595093' },
-                { name: 'D23', color: 'efe7fc' },
-                { name: 'D24', color: '7f77ea' },
-                { name: 'D25', color: '423bc0' },
-                { name: 'E1', color: 'ffd1cc' },
-                { name: 'E2', color: 'ffcaea' },
-                { name: 'E3', color: 'fb8dc5' },
-                { name: 'E4', color: 'ee78ac' },
-                { name: 'E5', color: 'f653a6' },
-                { name: 'E6', color: 'fd2f81' },
-                { name: 'E7', color: 'a2176a' },
-                { name: 'E8', color: 'ffd8e8' },
-                { name: 'E9', color: 'ea8cda' },
-                { name: 'E10', color: 'bf3974' },
-                { name: 'E11', color: 'fee7e2' },
-                { name: 'E12', color: 'fcafdd' },
-                { name: 'E13', color: 'a61284' },
-                { name: 'E14', color: 'fdd2bf' },
-                { name: 'E15', color: 'f3d1d7' },
-                { name: 'E16', color: 'fff3eb' },
-                { name: 'E17', color: 'fae8f8' },
-                { name: 'E18', color: 'fdd1ea' },
-                { name: 'E19', color: 'f6d3f3' },
-                { name: 'E20', color: 'f4d7e9' },
-                { name: 'E21', color: 'd6b3b9' },
-                { name: 'E22', color: 'c685b0' },
-                { name: 'E23', color: 'a089a3' },
-                { name: 'F1', color: 'fda098' },
-                { name: 'F2', color: 'fa6a62' },
-                { name: 'F3', color: 'ec4a59' },
-                { name: 'F4', color: 'ff452c' },
-                { name: 'F5', color: 'ff0000' },
-                { name: 'F6', color: 'b53710' },
-                { name: 'F7', color: '811530' },
-                { name: 'F8', color: 'bb082f' },
-                { name: 'F9', color: 'e67088' },
-                { name: 'F10', color: '8c420c' },
-                { name: 'F11', color: '6f3329' },
-                { name: 'F12', color: 'f9425e' },
-                { name: 'F13', color: 'd14b30' },
-                { name: 'F14', color: 'fdaca9' },
-                { name: 'F15', color: 'dd0c2c' },
-                { name: 'F16', color: 'fddedc' },
-                { name: 'F17', color: 'fbaf9f' },
-                { name: 'F18', color: 'e0804d' },
-                { name: 'F19', color: 'c64b60' },
-                { name: 'G1', color: 'fee5c7' },
-                { name: 'G2', color: 'fcceb7' },
-                { name: 'G3', color: 'f9c2a4' },
-                { name: 'G4', color: 'dcb99a' },
-                { name: 'G5', color: 'f2a76d' },
-                { name: 'G6', color: 'ee9867' },
-                { name: 'G7', color: '91664e' },
-                { name: 'G8', color: '4d312c' },
-                { name: 'G9', color: 'eabb85' },
-                { name: 'G10', color: 'bf9143' },
-                { name: 'G11', color: 'e4c896' },
-                { name: 'G12', color: 'ddb986' },
-                { name: 'G13', color: 'd19058' },
-                { name: 'G14', color: '856a54' },
-                { name: 'G15', color: 'f5f3dc' },
-                { name: 'G16', color: 'f2dfce' },
-                { name: 'G17', color: '5d5249' },
-                { name: 'G18', color: 'ffedd9' },
-                { name: 'G19', color: 'eca450' },
-                { name: 'G20', color: 'b0623e' },
-                { name: 'G21', color: 'cb906e' },
-                { name: 'H2', color: 'ffffff' },
-                { name: 'H3', color: 'aeaeae' },
-                { name: 'H4', color: '979296' },
-                { name: 'H5', color: '606060' },
-                { name: 'H6', color: '353537' },
-                { name: 'H7', color: '000000' },
-                { name: 'H8', color: 'f7e6f0' },
-                { name: 'H9', color: 'e6e3dc' },
-                { name: 'H10', color: 'e5e2f3' },
-                { name: 'H11', color: 'cecdcb' },
-                { name: 'H12', color: 'fff2e2' },
-                { name: 'H13', color: 'ece1cb' },
-                { name: 'H14', color: 'c5ced8' },
-                { name: 'H15', color: '9facc7' },
-                { name: 'H16', color: '241d1a' },
-                { name: 'H17', color: 'f6f4f5' },
-                { name: 'H18', color: 'fffdf1' },
-                { name: 'H19', color: 'f8f3eb' },
-                { name: 'H20', color: 'a0acb1' },
-                { name: 'M1', color: 'ccd7c9' },
-                { name: 'M2', color: '91aa94' },
-                { name: 'M3', color: '718898' },
-                { name: 'M4', color: 'dacec2' },
-                { name: 'M5', color: 'dbd6b6' },
-                { name: 'M6', color: 'c8b999' },
-                { name: 'M7', color: 'c1aca7' },
-                { name: 'M8', color: 'b09699' },
-                { name: 'M9', color: 'ab9787' },
-                { name: 'M10', color: 'bb9fb9' },
-                { name: 'M11', color: '9b809f' },
-                { name: 'M12', color: '5a474c' },
-                { name: 'M13', color: 'dda89a' },
-                { name: 'M14', color: 'c0725d' },
-                { name: 'M15', color: '86848a' },
-            ]
-        );
+                /**********************
+         * 1) 色号表：来自 mard_colors.js
+         *    window.allColor: Map<paletteKey, Array<{color,name,series,transparency}>>
+         **********************/
+        const ALL_COLOR = (window.allColor instanceof Map) ? window.allColor : new Map();
+        function getPaletteKeys() { return Array.from(ALL_COLOR.keys()); }
+        function getPaletteRaw(key) { return ALL_COLOR.get(key) || []; }
 
-        // 统一格式化：name 大写、color 去掉 #、转小写
         function normalizePalette(arr) {
             return (arr || []).map(p => ({
                 name: String(p.name || '').trim().toUpperCase(),
-                color: String(p.color || '').trim().replace(/^#/, '').toLowerCase()
+                color: String(p.color || '').trim().replace(/^#/, '').toLowerCase(),
+                series: String(p.series || '').trim().toUpperCase(),
+                transparency: String(p.transparency || '').trim().toUpperCase(),
             })).filter(p => p.name && /^[0-9a-f]{6}$/.test(p.color));
         }
 
-        const MARD_PALETTE = normalizePalette(allPalettes.get("mard"));
-        const DEFAULT_ALLOWED_CODES = MARD_PALETTE.map(p => p.name);
+                // 默认使用 mard220（如不存在则取第一个）
+        function pickDefaultPaletteKey() {
+            const saved = localStorage.getItem('palette_key');
+            if (saved && ALL_COLOR.has(saved)) return saved;
+            if (ALL_COLOR.has('mard220')) return 'mard220';
+            const keys = getPaletteKeys();
+            return keys[0] || 'mard220';
+        }
+        function getPaletteListByKey(key) { return normalizePalette(getPaletteRaw(key)); }
+        const DEFAULT_PALETTE_KEY = pickDefaultPaletteKey();
 
-        /**********************
+/**********************
          * State
          **********************/
         const state = {
@@ -1069,6 +1017,23 @@
             done: new Set(),
             doneHistory: [],
             lastPickedCell: null,
+
+            // ✅ 当前色号表（mard220 / mard249 ...）
+            paletteKey: DEFAULT_PALETTE_KEY,
+            paletteList: getPaletteListByKey(DEFAULT_PALETTE_KEY),
+
+            // ✅ 识别限制：none | series | name（会与 sehao.csv 限制取交集）
+            filterMode: (localStorage.getItem('filter_mode') || 'none'),
+            filterSeries: new Set(JSON.parse(localStorage.getItem('filter_series') || '[]').map(s => String(s).toUpperCase())),
+            filterNames: new Set(JSON.parse(localStorage.getItem('filter_names') || '[]').map(s => String(s).toUpperCase())),
+
+            // ✅ 批量点选完成
+            multiSelectMode: false,
+            multiSelected: new Set(),
+
+            // ✅ 保存最后一次裁剪后的图片（方便切换色号表/限制后自动重新识别）
+            lastImageDataURL: null,
+
 
             // ✅ “只看当前色” 改为悬浮按钮控制 + 记忆
             onlyActiveColor: (localStorage.getItem('only_active_color') === '1'),
@@ -1093,6 +1058,33 @@
             autoFit: document.getElementById('autoFit'),
             limitSehao: document.getElementById('limitSehao'),
             maxColors: document.getElementById('maxColors'),
+
+            // ✅ 色号表选择 / 识别限制
+            paletteSelect: document.getElementById('paletteSelect'),
+            paletteChip: document.getElementById('paletteChip'),
+            filterBtn: document.getElementById('filterBtn'),
+            filterPill: document.getElementById('filterPill'),
+            filterOverlay: document.getElementById('filterOverlay'),
+            filterClose: document.getElementById('filterClose'),
+            filterApply: document.getElementById('filterApply'),
+            filterClear: document.getElementById('filterClear'),
+            filterPaletteHint: document.getElementById('filterPaletteHint'),
+            filterModeNone: document.getElementById('filterModeNone'),
+            filterModeSeries: document.getElementById('filterModeSeries'),
+            filterModeName: document.getElementById('filterModeName'),
+            filterBySeries: document.getElementById('filterBySeries'),
+            filterByName: document.getElementById('filterByName'),
+            filterSeriesList: document.getElementById('filterSeriesList'),
+            filterSeriesAll: document.getElementById('filterSeriesAll'),
+            filterSeriesNone: document.getElementById('filterSeriesNone'),
+            filterNameSearch: document.getElementById('filterNameSearch'),
+            filterNameList: document.getElementById('filterNameList'),
+            filterNameAll: document.getElementById('filterNameAll'),
+            filterNameNone: document.getElementById('filterNameNone'),
+
+            // ✅ PNG 导出模式
+            exportPngMode: document.getElementById('exportPngMode'),
+
 
             fitBtn: document.getElementById('fitBtn'),
             resetViewBtn: document.getElementById('resetViewBtn'),
@@ -1168,6 +1160,7 @@
             fabPrev: document.getElementById('fabPrev'),
             fabNext: document.getElementById('fabNext'),
             fabDone: document.getElementById('fabDone'),
+            fabMulti: document.getElementById('fabMulti'),
             fabUndo: document.getElementById('fabUndo'),
             fabBulk: document.getElementById('fabBulk'),
             fabExport: document.getElementById('fabExport'),
@@ -1176,6 +1169,12 @@
             fabOnly: document.getElementById('fabOnly'),
             fabCenter: document.getElementById('fabCenter'),
             fabPanelToggle: document.getElementById('fabPanelToggle'),
+
+            // ✅ 批量点选完成：底部确认条
+            multiBar: document.getElementById('multiBar'),
+            multiCount: document.getElementById('multiCount'),
+            multiConfirm: document.getElementById('multiConfirm'),
+            multiCancel: document.getElementById('multiCancel'),
         };
 
         /**********************
@@ -1211,13 +1210,249 @@
 
         function downloadBlob(filename, blob) {
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            a.href = url;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            // 释放 URL，避免内存占用
+            setTimeout(() => URL.revokeObjectURL(url), 0);
         }
+
+/**********************
+         * ✅ Palette & Filters (mard_colors.js)
+         **********************/
+        function updatePaletteChip() {
+            if (!el.paletteChip) return;
+            const key = state.paletteKey || DEFAULT_PALETTE_KEY;
+            const n = (state.paletteList || []).length;
+            el.paletteChip.textContent = `${key}（${n}色）`;
+            if (el.filterPaletteHint) el.filterPaletteHint.textContent = `${key}（${n}色）`;
+        }
+
+        function updateFilterPill() {
+            if (!el.filterPill) return;
+
+            const parts = [];
+            const mode = state.filterMode || 'none';
+
+            if (el.limitSehao && el.limitSehao.checked) parts.push('sehao.csv');
+
+            if (mode === 'series' && (state.filterSeries?.size || 0) > 0) {
+                parts.push(`系列:${(state.filterSeries?.size || 0)}`);
+            } else if (mode === 'name' && (state.filterNames?.size || 0) > 0) {
+                parts.push(`色号:${(state.filterNames?.size || 0)}`);
+            }
+
+            el.filterPill.textContent = (parts.length === 0) ? '全部' : parts.join(' + ');
+        }
+
+        function rerunFromLastImage(okText, fallbackText) {
+            // okText：有 lastImageDataURL 时显示；fallbackText：没有 lastImageDataURL 时显示
+            if (!state.lastImageDataURL) {
+                el.statusPill.textContent = fallbackText || '请先导入并裁剪图片';
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    buildFromImage(img);
+                    el.statusPill.textContent = okText || '已重新识别';
+                } catch (err) {
+                    alert(err?.message || String(err));
+                }
+            };
+            img.src = state.lastImageDataURL;
+        }
+
+        function initPaletteSelect() {
+            if (!el.paletteSelect) return;
+            const keys = getPaletteKeys();
+            el.paletteSelect.innerHTML = '';
+            for (const k of keys) {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = k;
+                el.paletteSelect.appendChild(opt);
+            }
+            if (!keys.includes(state.paletteKey)) state.paletteKey = DEFAULT_PALETTE_KEY;
+            el.paletteSelect.value = state.paletteKey;
+            updatePaletteChip();
+        }
+
+        function setPaletteKey(key) {
+            if (!key || !ALL_COLOR.has(key)) return;
+            state.paletteKey = key;
+            localStorage.setItem('palette_key', key);
+            rebuildPaletteMaps();
+            initFilterOverlayData();
+            initPaletteSelect();
+            rerunFromLastImage(`已切换色号表为 ${key} 并重新识别`, `已切换色号表为 ${key}（请重新导入/裁剪后识别）`);
+        }
+
+        function setFilterMode(mode) {
+            state.filterMode = mode;
+            localStorage.setItem('filter_mode', mode);
+        }
+        function persistFilterSets() {
+            localStorage.setItem('filter_series', JSON.stringify([...state.filterSeries]));
+            localStorage.setItem('filter_names', JSON.stringify([...state.filterNames]));
+        }
+
+        function initFilterOverlayData() {
+            // 确保当前 paletteList 已更新
+            state.paletteList = getPaletteListByKey(state.paletteKey);
+            updatePaletteChip();
+            updateFilterPill();
+        }
+
+        function refreshFilterOverlayUI() {
+            if (!el.filterOverlay) return;
+
+            initFilterOverlayData();
+
+            // radio
+            const mode = state.filterMode || 'none';
+            if (el.filterModeNone) el.filterModeNone.checked = (mode === 'none');
+            if (el.filterModeSeries) el.filterModeSeries.checked = (mode === 'series');
+            if (el.filterModeName) el.filterModeName.checked = (mode === 'name');
+
+            if (el.filterBySeries) el.filterBySeries.style.display = (mode === 'series') ? '' : 'none';
+            if (el.filterByName) el.filterByName.style.display = (mode === 'name') ? '' : 'none';
+
+            // series list
+            if (el.filterSeriesList) {
+                const series = [...new Set((state.paletteList || []).map(p => p.series).filter(Boolean))].sort();
+                el.filterSeriesList.innerHTML = '';
+                for (const s of series) {
+                    const count = (state.paletteList || []).filter(p => p.series === s).length;
+                    const item = document.createElement('div');
+                    item.className = 'colorItem';
+                    const checked = state.filterSeries.has(s);
+                    item.innerHTML = `
+          <div class="ciLeft">
+            <label style="display:flex; align-items:center; gap:10px">
+              <input type="checkbox" ${checked ? 'checked' : ''} data-series="${s}">
+              <b>${s}</b>
+              <small>${count}色</small>
+            </label>
+          </div>
+        `;
+                    el.filterSeriesList.appendChild(item);
+                }
+            }
+
+            // names list
+            refreshFilterNameList();
+        }
+
+        function refreshFilterNameList() {
+            if (!el.filterNameList) return;
+            const q = (el.filterNameSearch?.value || '').trim().toUpperCase();
+
+            const names = (state.paletteList || [])
+                .map(p => p.name)
+                .filter(Boolean)
+                .filter(n => !q || n.includes(q))
+                .sort((a, b) => a.localeCompare(b, 'en'));
+
+            el.filterNameList.innerHTML = '';
+            for (const name of names) {
+                const item = document.createElement('div');
+                item.className = 'colorItem';
+                const hex = state.codeToHex.get(name) || '000000';
+                const checked = state.filterNames.has(name);
+                item.innerHTML = `
+          <div class="ciLeft">
+            <label style="display:flex; align-items:center; gap:10px">
+              <input type="checkbox" ${checked ? 'checked' : ''} data-name="${name}">
+              <div class="sw" style="background:#${hex}"></div>
+              <b>${name}</b>
+              <small>#${hex}</small>
+            </label>
+          </div>
+        `;
+                el.filterNameList.appendChild(item);
+            }
+        }
+
+        function applyFilterFromOverlay() {
+            // mode
+            let mode = 'none';
+            if (el.filterModeSeries?.checked) mode = 'series';
+            if (el.filterModeName?.checked) mode = 'name';
+            setFilterMode(mode);
+
+            // series set
+            if (mode === 'series') {
+                const set = new Set();
+                el.filterSeriesList?.querySelectorAll('input[type="checkbox"][data-series]').forEach(chk => {
+                    if (chk.checked) set.add(String(chk.dataset.series || '').toUpperCase());
+                });
+                state.filterSeries = set;
+            }
+
+            // names set
+            if (mode === 'name') {
+                const set = new Set();
+                el.filterNameList?.querySelectorAll('input[type="checkbox"][data-name]').forEach(chk => {
+                    if (chk.checked) set.add(String(chk.dataset.name || '').toUpperCase());
+                });
+                state.filterNames = set;
+            }
+
+            persistFilterSets();
+            rebuildPaletteMaps();
+            closeOverlay(el.filterOverlay);
+            rerunFromLastImage('已应用识别限制并重新识别', '已应用识别限制（请重新导入/裁剪后识别）');
+        }
+
+        /**********************
+         * ✅ Multi Select Done
+         **********************/
+        function updateMultiBar() {
+            if (!el.multiBar) return;
+            if (!state.multiSelectMode) { el.multiBar.style.display = 'none'; return; }
+            el.multiBar.style.display = '';
+            if (el.multiCount) el.multiCount.textContent = String(state.multiSelected.size || 0);
+        }
+
+        function enterMultiSelectMode() {
+            if (!state.isReady) return;
+            state.multiSelectMode = true;
+            state.multiSelected.clear();
+            updateMultiBar();
+            el.statusPill.textContent = '批量点选完成：点击格子进行选择';
+            requestDraw();
+        }
+
+        function exitMultiSelectMode() {
+            state.multiSelectMode = false;
+            state.multiSelected.clear();
+            updateMultiBar();
+            el.statusPill.textContent = '已退出批量点选';
+            requestDraw();
+        }
+
+        function confirmMultiDone() {
+            if (!state.isReady) return;
+            if (state.multiSelected.size === 0) { el.statusPill.textContent = '未选择任何格子'; return; }
+            let added = 0;
+            for (const k of state.multiSelected) {
+                if (!state.done.has(k)) {
+                    state.done.add(k);
+                    state.doneHistory.push(k);
+                    added++;
+                }
+            }
+            if (state.doneHistory.length > 200000) state.doneHistory.splice(0, state.doneHistory.length - 200000);
+            el.statusPill.textContent = `批量完成：新增 ${added} 格`;
+            exitMultiSelectMode();
+            updateMeta();
+            requestDraw();
+        }
+
         function downloadText(filename, text, mime) {
             downloadBlob(filename, new Blob([text], { type: mime || 'text/plain;charset=utf-8' }));
         }
@@ -1296,15 +1531,58 @@
          * Palette maps + allowed list
          **********************/
         function rebuildPaletteMaps() {
-            state.codeToHex.clear();
-            for (const p of MARD_PALETTE) { state.codeToHex.set(p.name, p.color); }
+            // 1) 确保 paletteList 同步
+            if (!state.paletteKey) state.paletteKey = DEFAULT_PALETTE_KEY;
+            state.paletteList = getPaletteListByKey(state.paletteKey);
 
-            if (el.limitSehao.checked) {
-                const list = state.allowedList ?? DEFAULT_ALLOWED_CODES;
-                state.allowedSet = new Set(list);
-            } else {
-                state.allowedSet = null;
+            // 2) code -> hex
+            state.codeToHex.clear();
+            for (const p of state.paletteList) { state.codeToHex.set(p.name, p.color); }
+
+            // 3) 计算允许的识别色号（与 sehao.csv / series / name 限制取交集）
+            const baseSet = new Set(state.paletteList.map(p => p.name));
+
+            const intersect = (A, B) => {
+                const out = new Set();
+                for (const v of A) { if (B.has(v)) out.add(v); }
+                return out;
+            };
+
+            let allowed = null; // null 代表不限制
+
+            // 3.1 sehao.csv 限制（可选）
+            let hasSehao = false;
+            if (el.limitSehao && el.limitSehao.checked) {
+                hasSehao = true;
+                const list = (state.allowedList && state.allowedList.length) ? state.allowedList : Array.from(baseSet);
+                allowed = new Set(list.map(s => String(s).trim().toUpperCase()).filter(c => baseSet.has(c)));
             }
+
+            // 3.2 series / name 限制（空集合视作“不限制”）
+            const mode = (state.filterMode || 'none');
+
+            let hasFilter = false;
+            if (mode === 'series') {
+                const seriesSet = state.filterSeries || new Set();
+                if (seriesSet.size > 0) {
+                    hasFilter = true;
+                    const codesInSeries = new Set(state.paletteList.filter(p => seriesSet.has(p.series)).map(p => p.name));
+                    allowed = allowed ? intersect(allowed, codesInSeries) : codesInSeries;
+                }
+            } else if (mode === 'name') {
+                const nameSet = state.filterNames || new Set();
+                if (nameSet.size > 0) {
+                    hasFilter = true;
+                    const valid = new Set([...nameSet].filter(n => baseSet.has(n)));
+                    allowed = allowed ? intersect(allowed, valid) : valid;
+                }
+            }
+
+            state.allowedSet = (hasSehao || hasFilter) ? allowed : null;
+
+            // UI
+            updatePaletteChip();
+            updateFilterPill();
         }
         rebuildPaletteMaps();
 
@@ -1537,6 +1815,7 @@
             const img = new Image();
             img.onload = () => { closeOverlay(el.cropOverlay); buildFromImage(img); };
             img.src = out.toDataURL('image/png');
+            state.lastImageDataURL = img.src;
         }
 
         /**********************
@@ -1613,7 +1892,8 @@
         function buildFromImage(img) {
             rebuildPaletteMaps();
 
-            let candidates = MARD_PALETTE.map(p => ({ name: p.name, color: p.color }));
+            // 候选色卡（来自当前 paletteKey）
+            let candidates = (state.paletteList || []).map(p => ({ name: p.name, color: p.color, series: p.series }));
             if (state.allowedSet) {
                 candidates = candidates.filter(p => state.allowedSet.has(p.name));
             }
@@ -1621,7 +1901,7 @@
                 const rgb = hexToRgb(p.color);
                 return { code: p.name, hex: p.color, lab: rgbToLab(rgb.r, rgb.g, rgb.b) };
             });
-            if (cand.length === 0) throw new Error('候选色卡为空（检查 sehao 限制）');
+            if (cand.length === 0) throw new Error('候选色卡为空（检查 sehao / series / name 限制）');
 
             let W = parseInt(el.gridW.value, 10) || 52;
             let H = parseInt(el.gridH.value, 10) || 52;
@@ -1637,11 +1917,14 @@
                 el.gridW.value = W; el.gridH.value = H;
             }
 
+            // ✅ 更准确的采样：不把图片直接缩放成 W×H，而是对每个格子的“中心区域”做多点采样
+            const iw = img.naturalWidth, ih = img.naturalHeight;
             const src = document.createElement('canvas');
-            src.width = W; src.height = H;
+            src.width = iw; src.height = ih;
             const sctx = src.getContext('2d', { willReadFrequently: true });
-            sctx.drawImage(img, 0, 0, W, H);
-            const data = sctx.getImageData(0, 0, W, H).data;
+            sctx.imageSmoothingEnabled = false;
+            sctx.drawImage(img, 0, 0);
+            const data = sctx.getImageData(0, 0, iw, ih).data;
 
             const cache = new Map();
             function nearestCode(r, g, b) {
@@ -1660,17 +1943,72 @@
 
             const codeGrid = new Array(W * H).fill('');
             const codeCount = new Map();
-            for (let i = 0; i < W * H; i++) {
-                const a = data[i * 4 + 3];
-                if (a === 0) continue;
-                const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-                const best = nearestCode(r, g, b);
-                codeGrid[i] = best.code;
-                codeCount.set(best.code, (codeCount.get(best.code) || 0) + 1);
+
+            // 如果图片本身就是 W×H（像素画每格=1像素），直接读取对应像素（最准确）
+            const direct = (iw === W && ih === H);
+
+            const cellW = iw / W, cellH = ih / H;
+            const N = 5;               // 每格采样点：N×N
+            const margin = 0.22;       // 采样区域边距比例（避免边缘线条干扰）
+
+            function clampI(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+            function sampleCell(x, y) {
+                if (direct) {
+                    const i = (y * iw + x) * 4;
+                    const a = data[i + 3];
+                    if (a === 0) return null;
+                    return { r: data[i], g: data[i + 1], b: data[i + 2] };
+                }
+
+                const x0 = x * cellW, x1 = (x + 1) * cellW;
+                const y0 = y * cellH, y1 = (y + 1) * cellH;
+
+                const sx0 = x0 + cellW * margin;
+                const sx1 = x1 - cellW * margin;
+                const sy0 = y0 + cellH * margin;
+                const sy1 = y1 - cellH * margin;
+
+                let sumR = 0, sumG = 0, sumB = 0, sumW = 0;
+
+                for (let iy = 0; iy < N; iy++) {
+                    const py = Math.floor(sy0 + (iy + 0.5) * (sy1 - sy0) / N);
+                    const yy = clampI(py, 0, ih - 1);
+                    for (let ix = 0; ix < N; ix++) {
+                        const px = Math.floor(sx0 + (ix + 0.5) * (sx1 - sx0) / N);
+                        const xx = clampI(px, 0, iw - 1);
+                        const i = (yy * iw + xx) * 4;
+                        const a = data[i + 3] / 255;
+                        if (a <= 0.05) continue;
+                        sumR += data[i] * a;
+                        sumG += data[i + 1] * a;
+                        sumB += data[i + 2] * a;
+                        sumW += a;
+                    }
+                }
+
+                if (sumW <= 0.001) return null;
+                return {
+                    r: Math.round(sumR / sumW),
+                    g: Math.round(sumG / sumW),
+                    b: Math.round(sumB / sumW),
+                };
             }
 
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const i = y * W + x;
+                    const s = sampleCell(x, y);
+                    if (!s) continue;
+                    const best = nearestCode(s.r, s.g, s.b);
+                    codeGrid[i] = best.code;
+                    codeCount.set(best.code, (codeCount.get(best.code) || 0) + 1);
+                }
+            }
+
+            // used colors -> sort by count desc
             const sorted = [...codeCount.entries()].sort((a, b) => b[1] - a[1]);
-            let usedColors = sorted.map(([code, count]) => ({ code, hex: state.codeToHex.get(code), count }));
+            let usedColors = sorted.map(([code, count]) => ({ code, hex: state.codeToHex.get(code) || '000000', count }));
 
             const idxMap = new Map();
             usedColors.forEach((u, i) => idxMap.set(u.code, i));
@@ -1703,6 +2041,12 @@
             state.done.clear(); state.doneHistory.length = 0;
             state.history.length = 0; state.activeTarget = null;
             state.activeCode = state.usedColors[0]?.code || null;
+
+            // 进入批量模式时，先清空选区
+            state.multiSelected.clear();
+            state.multiSelectMode = false;
+            if (el.multiBar) el.multiBar.style.display = 'none';
+
             state.isReady = true;
             syncUIAfterBuild();
             fitToScreen();
@@ -1774,9 +2118,12 @@
         function refreshEditList() {
             const q = (el.editSearch.value || '').trim().toUpperCase();
             el.editList.innerHTML = '';
-            for (const p of MARD_PALETTE) {
+
+            const pal = state.paletteList || [];
+            for (const p of pal) {
                 if (state.allowedSet && !state.allowedSet.has(p.name)) continue;
-                if (q && !p.name.toUpperCase().includes(q)) continue;
+                if (q && !p.name.includes(q)) continue;
+
                 const item = document.createElement('div');
                 item.className = 'colorItem';
                 item.innerHTML = `
@@ -1789,7 +2136,7 @@
           </div>
           <div class="ciRight">点击替换</div>
         `;
-                item.addEventListener('click', () => { applyEditColorToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
+                item.addEventListener('click', () => { applyEditToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
                 el.editList.appendChild(item);
             }
         }
@@ -2143,6 +2490,16 @@
                         ctx.stroke();
                         ctx.restore();
                     }
+
+                    // ✅ 批量点选高亮
+                    if (state.multiSelectMode && state.multiSelected.has(k)) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.95;
+                        ctx.lineWidth = 3.2 / z;
+                        ctx.strokeStyle = 'rgba(0,180,255,.95)';
+                        ctx.strokeRect(x * cell + 1.2, y * cell + 1.2, cell - 2.4, cell - 2.4);
+                        ctx.restore();
+                    }
                 }
             }
 
@@ -2283,6 +2640,22 @@
             if (!pointer.moved && dt < 300 && state.isReady) {
                 const hit = canvasToWorld(sx, sy);
                 if (hit.x >= 0 && hit.x < state.gridW && hit.y >= 0 && hit.y < state.gridH) {
+                    const k = hit.y * state.gridW + hit.x;
+
+                    if (state.multiSelectMode) {
+                        // ✅ 批量点选：切换选中/取消选中
+                        if (state.multiSelected.has(k)) state.multiSelected.delete(k);
+                        else state.multiSelected.add(k);
+
+                        state.lastPickedCell = { x: hit.x, y: hit.y };
+                        state.activeTarget = { x: hit.x, y: hit.y };
+
+                        updateMultiBar();
+                        updateMeta();
+                        requestDraw();
+                        return;
+                    }
+
                     state.lastPickedCell = { x: hit.x, y: hit.y };
                     state.activeTarget = { x: hit.x, y: hit.y };
                     updateMeta();
@@ -2514,16 +2887,28 @@
             const blankExcluded = el.exportBlankExcluded.checked;
             const W = state.gridW, H = state.gridH;
 
+            const mode = (el.exportPngMode && el.exportPngMode.value) ? el.exportPngMode.value : 'grid_only';
+
             const cell = 20;
+
+            const stats = (mode === 'grid_codes_legend') ? calcExportStats(includeSet) : [];
+            const rowH = 18;
+            const legendCols = (mode === 'grid_codes_legend') ? Math.max(1, Math.floor((W * cell) / 220)) : 1;
+            const legendRows = (mode === 'grid_codes_legend') ? Math.ceil(stats.length / legendCols) : 0;
+            const legendH = (mode === 'grid_codes_legend') ? (legendRows * rowH + 34) : 0;
+
             const out = document.createElement('canvas');
             out.width = W * cell;
-            out.height = H * cell;
-            const g = out.getContext('2d');
+            out.height = H * cell + legendH;
 
+            const g = out.getContext('2d');
             g.clearRect(0, 0, out.width, out.height);
+
+            // 背景
             g.fillStyle = '#0b0c10';
             g.fillRect(0, 0, out.width, out.height);
 
+            // 画格子画
             for (let y = 0; y < H; y++) {
                 for (let x = 0; x < W; x++) {
                     const k = y * W + x;
@@ -2531,24 +2916,29 @@
                     if (idx < 0) continue;
                     const code = state.usedColors[idx].code;
 
-                    if (!includeSet.has(code) && blankExcluded) {
-                        g.fillStyle = 'rgba(255,255,255,0.04)';
-                        g.fillRect(x * cell, y * cell, cell, cell);
-                        continue;
-                    }
+                    if (!includeSet.has(code) && blankExcluded) continue;
 
                     const hex = state.usedColors[idx].hex;
                     g.fillStyle = '#' + hex;
                     g.fillRect(x * cell, y * cell, cell, cell);
 
-                    if (state.done.has(k)) {
-                        g.fillStyle = 'rgba(0,0,0,0.42)';
-                        g.fillRect(x * cell, y * cell, cell, cell);
+                    if (mode === 'grid_codes_legend' && includeSet.has(code)) {
+                        // 文字颜色：自动黑/白
+                        const rgb = hexToRgb(hex);
+                        const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b);
+                        g.fillStyle = (lum > 145) ? 'rgba(0,0,0,.92)' : 'rgba(255,255,255,.92)';
+                        const len = String(code).length;
+                        const fs = (len <= 2) ? 11 : (len === 3 ? 10 : 9);
+                        g.font = `bold ${fs}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+                        g.textAlign = 'center';
+                        g.textBaseline = 'middle';
+                        g.fillText(code, x * cell + cell / 2, y * cell + cell / 2);
                     }
                 }
             }
 
-            g.strokeStyle = 'rgba(0,0,0,0.35)';
+            // 网格线（只覆盖格子区域）
+            g.strokeStyle = 'rgba(0,0,0,.55)';
             g.lineWidth = 1;
             for (let x = 0; x <= W; x++) {
                 g.beginPath();
@@ -2563,9 +2953,45 @@
                 g.stroke();
             }
 
+            // 画统计（下方）
+            if (mode === 'grid_codes_legend') {
+                const top = H * cell;
+                g.fillStyle = '#ffffff';
+                g.fillRect(0, top, out.width, legendH);
+
+                g.fillStyle = '#111';
+                g.font = 'bold 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+                g.textAlign = 'left';
+                g.textBaseline = 'alphabetic';
+                g.fillText(`色号统计（共 ${stats.reduce((s, r) => s + r.total, 0)} 格）`, 12, top + 22);
+
+                g.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+                const colW = out.width / legendCols;
+
+                for (let i = 0; i < stats.length; i++) {
+                    const col = i % legendCols;
+                    const row = Math.floor(i / legendCols);
+                    const x0 = col * colW + 12;
+                    const y0 = top + 34 + row * rowH;
+
+                    const r = stats[i];
+                    // swatch
+                    g.fillStyle = '#' + r.hex;
+                    g.fillRect(x0, y0 - 11, 12, 12);
+                    g.strokeStyle = 'rgba(0,0,0,.35)';
+                    g.strokeRect(x0 + 0.5, y0 - 10.5, 11, 11);
+
+                    g.fillStyle = '#111';
+                    g.textAlign = 'left';
+                    g.textBaseline = 'middle';
+                    g.fillText(`${r.code}  × ${r.total}`, x0 + 18, y0 - 5);
+                }
+            }
+
             out.toBlob((blob) => {
                 if (!blob) { alert('导出 PNG 失败'); return; }
-                downloadBlob(`mard_grid_${timeStamp()}.png`, blob);
+                const suffix = (mode === 'grid_codes_legend') ? 'grid_codes' : 'grid';
+                downloadBlob(`mard_${suffix}_${timeStamp()}.png`, blob);
             }, 'image/png');
         }
 
@@ -2582,7 +3008,7 @@
 
         el.limitSehao.addEventListener('change', () => {
             rebuildPaletteMaps();
-            el.statusPill.textContent = '已切换色号限制（需重新导入）';
+            rerunFromLastImage('已切换色号限制并重新识别（使用同一张裁剪图）', '已切换色号限制（请重新导入/裁剪后识别）');
         });
 
         el.fitBtn.addEventListener('click', fitToScreen);
@@ -2660,6 +3086,55 @@
         el.fabUndo.addEventListener('click', undoDone);
         el.fabBulk.addEventListener('click', openBulkOverlay);
         el.fabExport.addEventListener('click', openExportOverlay);
+        if (el.fabMulti) el.fabMulti.addEventListener('click', () => {
+            if (!state.isReady) return;
+            if (state.multiSelectMode) exitMultiSelectMode();
+            else enterMultiSelectMode();
+        });
+
+        // palette select
+        initPaletteSelect();
+        if (el.paletteSelect) el.paletteSelect.addEventListener('change', () => {
+            setPaletteKey(el.paletteSelect.value);
+        });
+
+        // filter overlay
+        if (el.filterBtn) el.filterBtn.addEventListener('click', () => {
+            refreshFilterOverlayUI();
+            openOverlay(el.filterOverlay);
+        });
+        if (el.filterClose) el.filterClose.addEventListener('click', () => closeOverlay(el.filterOverlay));
+        if (el.filterClear) el.filterClear.addEventListener('click', () => {
+            setFilterMode('none');
+            state.filterSeries = new Set();
+            state.filterNames = new Set();
+            persistFilterSets();
+            rebuildPaletteMaps();
+            refreshFilterOverlayUI();
+            rerunFromLastImage('已清空识别限制并重新识别', '已清空识别限制（请重新导入/裁剪后识别）');
+        });
+        if (el.filterApply) el.filterApply.addEventListener('click', applyFilterFromOverlay);
+        if (el.filterModeNone) el.filterModeNone.addEventListener('change', refreshFilterOverlayUI);
+        if (el.filterModeSeries) el.filterModeSeries.addEventListener('change', refreshFilterOverlayUI);
+        if (el.filterModeName) el.filterModeName.addEventListener('change', refreshFilterOverlayUI);
+        if (el.filterNameSearch) el.filterNameSearch.addEventListener('input', refreshFilterNameList);
+        if (el.filterSeriesAll) el.filterSeriesAll.addEventListener('click', () => {
+            el.filterSeriesList?.querySelectorAll('input[type="checkbox"][data-series]').forEach(chk => chk.checked = true);
+        });
+        if (el.filterSeriesNone) el.filterSeriesNone.addEventListener('click', () => {
+            el.filterSeriesList?.querySelectorAll('input[type="checkbox"][data-series]').forEach(chk => chk.checked = false);
+        });
+        if (el.filterNameAll) el.filterNameAll.addEventListener('click', () => {
+            el.filterNameList?.querySelectorAll('input[type="checkbox"][data-name]').forEach(chk => chk.checked = true);
+        });
+        if (el.filterNameNone) el.filterNameNone.addEventListener('click', () => {
+            el.filterNameList?.querySelectorAll('input[type="checkbox"][data-name]').forEach(chk => chk.checked = false);
+        });
+
+        // multi bar
+        if (el.multiCancel) el.multiCancel.addEventListener('click', exitMultiSelectMode);
+        if (el.multiConfirm) el.multiConfirm.addEventListener('click', confirmMultiDone);
+
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
