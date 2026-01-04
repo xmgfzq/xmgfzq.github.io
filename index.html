@@ -558,29 +558,31 @@
             height: 18px;
             flex: 0 0 auto;
         }
-    
-        /* ✅ 批量点选完成：底部确认条 */
-        .multiBar{
-            position:fixed;
-            left:50%;
-            bottom:16px;
-            transform:translateX(-50%);
-            z-index:99;
-            width:min(560px,92vw);
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
-            padding:10px 12px;
-            border-radius:14px;
-            background:rgba(20,20,26,.92);
-            border:1px solid rgba(255,255,255,.12);
-            box-shadow:0 10px 30px rgba(0,0,0,.35);
-            backdrop-filter:blur(10px);
-        }
-        #filterPill{ white-space:nowrap; }
 
-</style>
+        /* ✅ 批量点选完成：底部确认条 */
+        .multiBar {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            z-index: 99;
+            width: min(680px, 92vw);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(20, 20, 26, .92);
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            backdrop-filter: blur(10px);
+        }
+
+        #filterPill {
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
@@ -588,10 +590,13 @@
         <aside class="side card">
             <div class="header">
                 <div class="title">
-                    <b>拼豆逐格高亮助手</b>
+                    <b>拼豆助手</b>
                     <small>导入图纸 → 选颜色 → 下一格/完成（不跳视图）</small>
                 </div>
-                <div class="chip" id="paletteChip">Mard 色号</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="chip" id="paletteChip">Mard 色号</div>
+                    <button class="btn small" id="collapsePanelBtn" type="button">X</button>
+                </div>
             </div>
 
             <div class="content">
@@ -684,8 +689,6 @@
                     </div>
                 </div>
 
-                <!-- ✅ “只看当前颜色” 已移到悬浮按钮里（这里不再放开关） -->
-
                 <div class="hr"></div>
 
                 <div class="grid2">
@@ -746,7 +749,15 @@
             <button class="fabBtn" id="fabPrev" type="button">⬅️ 上一格</button>
             <button class="fabBtn primary" id="fabNext" type="button">➡️ 下一格</button>
             <button class="fabBtn ok" id="fabDone" type="button">✅ 完成此格</button>
+
             <button class="fabBtn ok" id="fabMulti" type="button">🧩 批量点选完成</button>
+
+            <!-- ✅ 新增：批量点选改色 -->
+            <button class="fabBtn ok" id="fabMultiEdit" type="button">🖌 批量点选改色</button>
+
+            <!-- ✅ 新增：替换色号 -->
+            <button class="fabBtn" id="fabReplace" type="button">🔁 替换色号</button>
+
             <button class="fabBtn danger" id="fabUndo" type="button">↩️ 撤销</button>
             <button class="fabBtn ok" id="fabBulk" type="button">⚡ 一键完成色号</button>
             <button class="fabBtn" id="fabExport" type="button">📦 导出</button>
@@ -754,13 +765,21 @@
         <button class="fabMain" id="fabMain" type="button">≡ 操作面板</button>
     </div>
 
-
-    <!-- 批量点选完成：底部确认条（仅在“批量模式”显示） -->
+    <!-- 批量点选完成：底部确认条（仅在“批量完成模式”显示） -->
     <div class="multiBar" id="multiBar" style="display:none">
         <div class="multiText">已选 <b id="multiCount">0</b> 格</div>
         <div style="display:flex; gap:8px">
             <button class="btn small ok" id="multiConfirm" type="button">标记完成</button>
             <button class="btn small" id="multiCancel" type="button">退出</button>
+        </div>
+    </div>
+
+    <!-- ✅ 新增：批量点选改色：底部确认条 -->
+    <div class="multiBar" id="multiEditBar" style="display:none">
+        <div class="multiText">已选 <b id="multiEditCount">0</b> 格</div>
+        <div style="display:flex; gap:8px">
+            <button class="btn small primary" id="multiEditPick" type="button">选择新色号</button>
+            <button class="btn small" id="multiEditCancel" type="button">退出</button>
         </div>
     </div>
 
@@ -821,6 +840,24 @@
         </div>
     </div>
 
+    <!-- ✅ 新增：批量点选改色：选择目标色号 -->
+    <div class="overlay" id="multiEditOverlay">
+        <div class="modal card" style="width:min(720px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>批量改色</b>
+                    <small>选择一个目标色号：所选格子将全部改成该色号</small>
+                </div>
+                <button class="btn small" id="multiEditClose" type="button">关闭</button>
+            </div>
+            <div class="modalBody" style="min-height:0">
+                <input id="multiEditSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）">
+                <div class="list" id="multiEditList" style="max-height:60vh"></div>
+                <div class="hint">提示：目标色号必须存在于当前色号表（并受 sehao/识别限制影响）。</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 一键完成指定色号 -->
     <div class="overlay" id="bulkOverlay">
         <div class="modal card" style="width:min(720px,96vw)">
@@ -839,7 +876,45 @@
         </div>
     </div>
 
-    
+    <!-- ✅ 新增：替换色号 -->
+    <div class="overlay" id="replaceOverlay">
+        <div class="modal card" style="width:min(920px,96vw)">
+            <div class="modalHead">
+                <div class="title">
+                    <b>替换色号</b>
+                    <small id="replaceHint">选择“原色号”和“目标色号”，应用后整张图中原色号会被替换</small>
+                </div>
+                <button class="btn small" id="replaceClose" type="button">关闭</button>
+            </div>
+
+            <div class="modalBody" style="min-height:0">
+                <div class="grid2" style="align-items:start">
+                    <div class="card" style="padding:12px">
+                        <b style="font-size:14px">原色号（来自当前图纸）</b>
+                        <input id="replaceFromSearch" type="text" placeholder="搜索原色号（A1 / C20 ...）"
+                            style="margin-top:10px">
+                        <div class="list" id="replaceFromList"
+                            style="max-height:46vh; margin-top:10px"></div>
+                    </div>
+
+                    <div class="card" style="padding:12px">
+                        <b style="font-size:14px">目标色号（来自当前色号表）</b>
+                        <input id="replaceToSearch" type="text" placeholder="搜索目标色号（A1 / C20 ...）"
+                            style="margin-top:10px">
+                        <div class="list" id="replaceToList"
+                            style="max-height:46vh; margin-top:10px"></div>
+                    </div>
+                </div>
+
+                <div class="hint">提示：替换不会自动清除“已完成”标记；如果你是为了修正识别误差，这是更安全的默认行为。</div>
+            </div>
+
+            <div class="modalFoot">
+                <button class="btn primary" id="replaceApply" type="button">应用替换</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 识别颜色限制（按 series / 按色号） -->
     <div class="overlay" id="filterOverlay">
         <div class="modal card" style="width:min(860px,96vw)">
@@ -856,13 +931,18 @@
                     <div>
                         <label>限制模式</label>
                         <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px">
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
-                                <input type="radio" name="filterMode" id="filterModeNone" checked> 不限制
+                            <label
+                                style="display:flex; align-items:center; gap:6px; font-size:13px">
+                                <input type="radio" name="filterMode" id="filterModeNone" checked>
+                                不限制
                             </label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
-                                <input type="radio" name="filterMode" id="filterModeSeries"> 按系列（series）
+                            <label
+                                style="display:flex; align-items:center; gap:6px; font-size:13px">
+                                <input type="radio" name="filterMode" id="filterModeSeries">
+                                按系列（series）
                             </label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px">
+                            <label
+                                style="display:flex; align-items:center; gap:6px; font-size:13px">
                                 <input type="radio" name="filterMode" id="filterModeName"> 按色号（name）
                             </label>
                         </div>
@@ -874,26 +954,32 @@
                 </div>
 
                 <div id="filterBySeries" class="card" style="padding:12px; margin:10px 0">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                    <div
+                        style="display:flex; align-items:center; justify-content:space-between; gap:10px">
                         <b style="font-size:14px">选择系列（series）</b>
                         <div style="display:flex; gap:8px">
                             <button class="btn small" id="filterSeriesAll" type="button">全选</button>
-                            <button class="btn small" id="filterSeriesNone" type="button">全不选</button>
+                            <button class="btn small" id="filterSeriesNone"
+                                type="button">全不选</button>
                         </div>
                     </div>
-                    <div class="list" id="filterSeriesList" style="max-height:32vh; margin-top:10px"></div>
+                    <div class="list" id="filterSeriesList"
+                        style="max-height:32vh; margin-top:10px"></div>
                 </div>
 
                 <div id="filterByName" class="card" style="padding:12px; margin:10px 0">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                    <div
+                        style="display:flex; align-items:center; justify-content:space-between; gap:10px">
                         <b style="font-size:14px">选择色号（name）</b>
                         <div style="display:flex; gap:8px">
                             <button class="btn small" id="filterNameAll" type="button">全选</button>
                             <button class="btn small" id="filterNameNone" type="button">全不选</button>
                         </div>
                     </div>
-                    <input id="filterNameSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）" style="margin-top:10px">
-                    <div class="list" id="filterNameList" style="max-height:32vh; margin-top:10px"></div>
+                    <input id="filterNameSearch" type="text" placeholder="搜索色号（A1 / C20 / M15）"
+                        style="margin-top:10px">
+                    <div class="list" id="filterNameList" style="max-height:32vh; margin-top:10px">
+                    </div>
                 </div>
 
                 <div class="hint">提示：修改限制后会自动重新识别（使用同一张裁剪后的图片）。</div>
@@ -905,7 +991,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- 导出 -->
     <div class="overlay" id="exportOverlay">
@@ -960,20 +1045,16 @@
         </div>
     </div>
 
-    
     <!-- 色号表（来自独立 JS 文件） -->
     <script src="mard_colors.js"></script>
 
-<script>
+    <script>
         /**********************
          * 0) 常量：网格最大 104
          **********************/
         const MAX_GRID = 104;
 
         /**********************
-         * 1) 你的 mard 色号表：name -> hex
-         **********************/
-                /**********************
          * 1) 色号表：来自 mard_colors.js
          *    window.allColor: Map<paletteKey, Array<{color,name,series,transparency}>>
          **********************/
@@ -990,7 +1071,7 @@
             })).filter(p => p.name && /^[0-9a-f]{6}$/.test(p.color));
         }
 
-                // 默认使用 mard220（如不存在则取第一个）
+        // 默认使用 mard220（如不存在则取第一个）
         function pickDefaultPaletteKey() {
             const saved = localStorage.getItem('palette_key');
             if (saved && ALL_COLOR.has(saved)) return saved;
@@ -1001,7 +1082,7 @@
         function getPaletteListByKey(key) { return normalizePalette(getPaletteRaw(key)); }
         const DEFAULT_PALETTE_KEY = pickDefaultPaletteKey();
 
-/**********************
+        /**********************
          * State
          **********************/
         const state = {
@@ -1031,9 +1112,12 @@
             multiSelectMode: false,
             multiSelected: new Set(),
 
+            // ✅ 新增：批量点选改色
+            multiEditMode: false,
+            multiEditSelected: new Set(),
+
             // ✅ 保存最后一次裁剪后的图片（方便切换色号表/限制后自动重新识别）
             lastImageDataURL: null,
-
 
             // ✅ “只看当前色” 改为悬浮按钮控制 + 记忆
             onlyActiveColor: (localStorage.getItem('only_active_color') === '1'),
@@ -1062,6 +1146,7 @@
             // ✅ 色号表选择 / 识别限制
             paletteSelect: document.getElementById('paletteSelect'),
             paletteChip: document.getElementById('paletteChip'),
+            collapsePanelBtn: document.getElementById('collapsePanelBtn'),
             filterBtn: document.getElementById('filterBtn'),
             filterPill: document.getElementById('filterPill'),
             filterOverlay: document.getElementById('filterOverlay'),
@@ -1085,14 +1170,12 @@
             // ✅ PNG 导出模式
             exportPngMode: document.getElementById('exportPngMode'),
 
-
             fitBtn: document.getElementById('fitBtn'),
             resetViewBtn: document.getElementById('resetViewBtn'),
             zoomInBtn: document.getElementById('zoomInBtn'),
             zoomOutBtn: document.getElementById('zoomOutBtn'),
             exportBtn: document.getElementById('exportBtn'),
             bulkBtn: document.getElementById('bulkBtn'),
-
             showCode: document.getElementById('showCode'),
 
             nextBtn: document.getElementById('nextBtn'),
@@ -1170,11 +1253,35 @@
             fabCenter: document.getElementById('fabCenter'),
             fabPanelToggle: document.getElementById('fabPanelToggle'),
 
+            // ✅ 新增：批量改色 / 替换色号
+            fabMultiEdit: document.getElementById('fabMultiEdit'),
+            fabReplace: document.getElementById('fabReplace'),
+
             // ✅ 批量点选完成：底部确认条
             multiBar: document.getElementById('multiBar'),
             multiCount: document.getElementById('multiCount'),
             multiConfirm: document.getElementById('multiConfirm'),
             multiCancel: document.getElementById('multiCancel'),
+
+            // ✅ 新增：批量点选改色
+            multiEditBar: document.getElementById('multiEditBar'),
+            multiEditCount: document.getElementById('multiEditCount'),
+            multiEditPick: document.getElementById('multiEditPick'),
+            multiEditCancel: document.getElementById('multiEditCancel'),
+            multiEditOverlay: document.getElementById('multiEditOverlay'),
+            multiEditClose: document.getElementById('multiEditClose'),
+            multiEditSearch: document.getElementById('multiEditSearch'),
+            multiEditList: document.getElementById('multiEditList'),
+
+            // ✅ 新增：替换色号
+            replaceOverlay: document.getElementById('replaceOverlay'),
+            replaceClose: document.getElementById('replaceClose'),
+            replaceApply: document.getElementById('replaceApply'),
+            replaceFromSearch: document.getElementById('replaceFromSearch'),
+            replaceFromList: document.getElementById('replaceFromList'),
+            replaceToSearch: document.getElementById('replaceToSearch'),
+            replaceToList: document.getElementById('replaceToList'),
+            replaceHint: document.getElementById('replaceHint'),
         };
 
         /**********************
@@ -1216,11 +1323,14 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-            // 释放 URL，避免内存占用
             setTimeout(() => URL.revokeObjectURL(url), 0);
         }
 
-/**********************
+        function downloadText(filename, text, mime) {
+            downloadBlob(filename, new Blob([text], { type: mime || 'text/plain;charset=utf-8' }));
+        }
+
+        /**********************
          * ✅ Palette & Filters (mard_colors.js)
          **********************/
         function updatePaletteChip() {
@@ -1229,6 +1339,18 @@
             const n = (state.paletteList || []).length;
             el.paletteChip.textContent = `${key}（${n}色）`;
             if (el.filterPaletteHint) el.filterPaletteHint.textContent = `${key}（${n}色）`;
+
+            // 新增：获取输入框元素并赋值 max 和 value 属性
+            const maxColorsInput = document.getElementById('maxColors');
+            if (maxColorsInput) { // 先判断元素是否存在，避免报错
+                maxColorsInput.max = n.toString();
+                maxColorsInput.value = n;
+
+                if (n < 1) {
+                    maxColorsInput.value = 1;
+                    maxColorsInput.max = 1;
+                }
+            }
         }
 
         function updateFilterPill() {
@@ -1249,7 +1371,6 @@
         }
 
         function rerunFromLastImage(okText, fallbackText) {
-            // okText：有 lastImageDataURL 时显示；fallbackText：没有 lastImageDataURL 时显示
             if (!state.lastImageDataURL) {
                 el.statusPill.textContent = fallbackText || '请先导入并裁剪图片';
                 return;
@@ -1301,10 +1422,17 @@
         }
 
         function initFilterOverlayData() {
-            // 确保当前 paletteList 已更新
             state.paletteList = getPaletteListByKey(state.paletteKey);
             updatePaletteChip();
             updateFilterPill();
+        }
+
+        // ✅ 修复：不要在切换 radio 时重渲染（会把用户刚选的 radio 又“刷回去”）
+        function updateFilterModeSectionsFromUI() {
+            if (!el.filterBySeries || !el.filterByName) return;
+            const mode = el.filterModeSeries?.checked ? 'series' : (el.filterModeName?.checked ? 'name' : 'none');
+            el.filterBySeries.style.display = (mode === 'series') ? '' : 'none';
+            el.filterByName.style.display = (mode === 'name') ? '' : 'none';
         }
 
         function refreshFilterOverlayUI() {
@@ -1312,14 +1440,12 @@
 
             initFilterOverlayData();
 
-            // radio
             const mode = state.filterMode || 'none';
             if (el.filterModeNone) el.filterModeNone.checked = (mode === 'none');
             if (el.filterModeSeries) el.filterModeSeries.checked = (mode === 'series');
             if (el.filterModeName) el.filterModeName.checked = (mode === 'name');
 
-            if (el.filterBySeries) el.filterBySeries.style.display = (mode === 'series') ? '' : 'none';
-            if (el.filterByName) el.filterByName.style.display = (mode === 'name') ? '' : 'none';
+            updateFilterModeSectionsFromUI();
 
             // series list
             if (el.filterSeriesList) {
@@ -1331,19 +1457,18 @@
                     item.className = 'colorItem';
                     const checked = state.filterSeries.has(s);
                     item.innerHTML = `
-          <div class="ciLeft">
-            <label style="display:flex; align-items:center; gap:10px">
-              <input type="checkbox" ${checked ? 'checked' : ''} data-series="${s}">
-              <b>${s}</b>
-              <small>${count}色</small>
-            </label>
-          </div>
-        `;
+            <div class="ciLeft">
+              <label style="display:flex; align-items:center; gap:10px">
+                <input type="checkbox" ${checked ? 'checked' : ''} data-series="${s}">
+                <b>${s}</b>
+                <small>${count}色</small>
+              </label>
+            </div>
+          `;
                     el.filterSeriesList.appendChild(item);
                 }
             }
 
-            // names list
             refreshFilterNameList();
         }
 
@@ -1378,13 +1503,11 @@
         }
 
         function applyFilterFromOverlay() {
-            // mode
             let mode = 'none';
             if (el.filterModeSeries?.checked) mode = 'series';
             if (el.filterModeName?.checked) mode = 'name';
             setFilterMode(mode);
 
-            // series set
             if (mode === 'series') {
                 const set = new Set();
                 el.filterSeriesList?.querySelectorAll('input[type="checkbox"][data-series]').forEach(chk => {
@@ -1393,7 +1516,6 @@
                 state.filterSeries = set;
             }
 
-            // names set
             if (mode === 'name') {
                 const set = new Set();
                 el.filterNameList?.querySelectorAll('input[type="checkbox"][data-name]').forEach(chk => {
@@ -1420,6 +1542,9 @@
 
         function enterMultiSelectMode() {
             if (!state.isReady) return;
+            // 互斥：进入完成模式时退出改色模式
+            if (state.multiEditMode) exitMultiEditMode();
+
             state.multiSelectMode = true;
             state.multiSelected.clear();
             updateMultiBar();
@@ -1453,8 +1578,250 @@
             requestDraw();
         }
 
-        function downloadText(filename, text, mime) {
-            downloadBlob(filename, new Blob([text], { type: mime || 'text/plain;charset=utf-8' }));
+        /**********************
+         * ✅ 新增：批量点选改色
+         **********************/
+        function updateMultiEditBar() {
+            if (!el.multiEditBar) return;
+            if (!state.multiEditMode) { el.multiEditBar.style.display = 'none'; return; }
+            el.multiEditBar.style.display = '';
+            if (el.multiEditCount) el.multiEditCount.textContent = String(state.multiEditSelected.size || 0);
+        }
+
+        function enterMultiEditMode() {
+            if (!state.isReady) return;
+            // 互斥：进入改色模式时退出完成模式
+            if (state.multiSelectMode) exitMultiSelectMode();
+
+            state.multiEditMode = true;
+            state.multiEditSelected.clear();
+            updateMultiEditBar();
+            el.statusPill.textContent = '批量点选改色：点击格子进行选择';
+            requestDraw();
+        }
+
+        function exitMultiEditMode() {
+            state.multiEditMode = false;
+            state.multiEditSelected.clear();
+            updateMultiEditBar();
+            el.statusPill.textContent = '已退出批量改色';
+            requestDraw();
+        }
+
+        function idxOfCode(code) { return state.usedColors.findIndex(u => u.code === code); }
+
+        function ensureUsedColorInGrid(code) {
+            const c = String(code || '').trim().toUpperCase();
+            const hex = state.codeToHex.get(c);
+            if (!hex) return { ok: false, code: c, idx: -1, hex: null };
+
+            let idx = idxOfCode(c);
+            if (idx < 0) {
+                state.usedColors.push({ code: c, hex });
+                idx = state.usedColors.length - 1;
+                if (!state.usedCounts.has(c)) state.usedCounts.set(c, 0);
+            }
+            return { ok: true, code: c, idx, hex };
+        }
+
+        function openMultiEditOverlay() {
+            if (!state.multiEditMode) return;
+            if (state.multiEditSelected.size === 0) {
+                el.statusPill.textContent = '请先批量点选一些格子';
+                return;
+            }
+            el.multiEditSearch.value = '';
+            refreshMultiEditList();
+            openOverlay(el.multiEditOverlay);
+        }
+
+        function refreshMultiEditList() {
+            if (!el.multiEditList) return;
+            const q = (el.multiEditSearch.value || '').trim().toUpperCase();
+            el.multiEditList.innerHTML = '';
+
+            const pal = (state.paletteList || []).slice();
+            for (const p of pal) {
+                if (state.allowedSet && !state.allowedSet.has(p.name)) continue;
+                if (q && !p.name.includes(q)) continue;
+
+                const item = document.createElement('div');
+                item.className = 'colorItem';
+                item.innerHTML = `
+          <div class="ciLeft">
+            <div class="sw" style="background:#${p.color}"></div>
+            <div class="ciText">
+              <b>${p.name}</b>
+              <small>#${p.color}</small>
+            </div>
+          </div>
+          <div class="ciRight">点击应用</div>
+        `;
+                item.addEventListener('click', () => {
+                    applyBatchEditToSelected(p.name);
+                    closeOverlay(el.multiEditOverlay);
+                });
+                el.multiEditList.appendChild(item);
+            }
+        }
+
+        function applyBatchEditToSelected(newCode) {
+            if (!state.isReady || !state.multiEditMode) return;
+            const sel = state.multiEditSelected;
+            if (!sel || sel.size === 0) return;
+
+            const ensured = ensureUsedColorInGrid(newCode);
+            if (!ensured.ok) { alert('目标色号不在当前色号表里'); return; }
+            const toIdx = ensured.idx;
+            const toCode = ensured.code;
+
+            let changed = 0;
+            for (const k of sel) {
+                const oldIdx = state.cells[k];
+                if (oldIdx === toIdx) continue;
+
+                if (oldIdx >= 0) {
+                    const oldCode = state.usedColors[oldIdx]?.code;
+                    if (oldCode && oldCode !== toCode) {
+                        state.usedCounts.set(oldCode, Math.max(0, (state.usedCounts.get(oldCode) || 0) - 1));
+                    } else if (oldCode === toCode) {
+                        continue;
+                    }
+                }
+
+                state.cells[k] = toIdx;
+                state.usedCounts.set(toCode, (state.usedCounts.get(toCode) || 0) + 1);
+                changed++;
+            }
+
+            el.statusPill.textContent = `批量改色：已修改 ${changed} 格 → ${toCode}`;
+            exitMultiEditMode();
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
+        }
+
+        /**********************
+         * ✅ 新增：替换色号（整张图）
+         **********************/
+        const replaceState = { from: null, to: null };
+
+        function openReplaceOverlay() {
+            if (!state.isReady) { alert('请先导入图纸'); return; }
+            replaceState.from = null;
+            replaceState.to = null;
+            el.replaceFromSearch.value = '';
+            el.replaceToSearch.value = '';
+            refreshReplaceLists();
+            updateReplaceHint();
+            openOverlay(el.replaceOverlay);
+        }
+
+        function updateReplaceHint() {
+            const a = replaceState.from ? `原：${replaceState.from}` : '原：—';
+            const b = replaceState.to ? `目标：${replaceState.to}` : '目标：—';
+            if (el.replaceHint) el.replaceHint.textContent = `${a}  →  ${b}`;
+        }
+
+        function refreshReplaceLists() {
+            refreshReplaceFromList();
+            refreshReplaceToList();
+            updateReplaceHint();
+        }
+
+        function refreshReplaceFromList() {
+            if (!el.replaceFromList) return;
+            const q = (el.replaceFromSearch.value || '').trim().toUpperCase();
+            el.replaceFromList.innerHTML = '';
+
+            const arr = [...state.usedColors].slice().sort((a, b) => (state.usedCounts.get(b.code) || 0) - (state.usedCounts.get(a.code) || 0));
+            for (const u of arr) {
+                if (q && !u.code.includes(q)) continue;
+                const total = state.usedCounts.get(u.code) || 0;
+
+                const item = document.createElement('div');
+                item.className = 'colorItem' + (replaceState.from === u.code ? ' active' : '');
+                item.innerHTML = `
+          <div class="ciLeft">
+            <div class="sw" style="background:#${u.hex}"></div>
+            <div class="ciText">
+              <b>${u.code}</b>
+              <small>#${u.hex}</small>
+            </div>
+          </div>
+          <div class="ciRight">${total} 格</div>
+        `;
+                item.addEventListener('click', () => {
+                    replaceState.from = u.code;
+                    refreshReplaceFromList();
+                    updateReplaceHint();
+                });
+                el.replaceFromList.appendChild(item);
+            }
+        }
+
+        function refreshReplaceToList() {
+            if (!el.replaceToList) return;
+            const q = (el.replaceToSearch.value || '').trim().toUpperCase();
+            el.replaceToList.innerHTML = '';
+
+            const pal = (state.paletteList || []);
+            for (const p of pal) {
+                if (state.allowedSet && !state.allowedSet.has(p.name)) continue;
+                if (q && !p.name.includes(q)) continue;
+
+                const item = document.createElement('div');
+                item.className = 'colorItem' + (replaceState.to === p.name ? ' active' : '');
+                item.innerHTML = `
+          <div class="ciLeft">
+            <div class="sw" style="background:#${p.color}"></div>
+            <div class="ciText">
+              <b>${p.name}</b>
+              <small>#${p.color}</small>
+            </div>
+          </div>
+          <div class="ciRight">点击选择</div>
+        `;
+                item.addEventListener('click', () => {
+                    replaceState.to = p.name;
+                    refreshReplaceToList();
+                    updateReplaceHint();
+                });
+                el.replaceToList.appendChild(item);
+            }
+        }
+
+        function replaceCodeInGrid(fromCode, toCode) {
+            if (!state.isReady) return;
+            const from = String(fromCode || '').trim().toUpperCase();
+            const to = String(toCode || '').trim().toUpperCase();
+            if (!from || !to) { alert('请先选择原色号与目标色号'); return; }
+            if (from === to) { alert('原色号与目标色号相同'); return; }
+
+            const fromIdx = idxOfCode(from);
+            if (fromIdx < 0) { alert('原色号不在当前图纸中'); return; }
+
+            const ensured = ensureUsedColorInGrid(to);
+            if (!ensured.ok) { alert('目标色号不在当前色号表里'); return; }
+            const toIdx = ensured.idx;
+
+            let moved = 0;
+            for (let i = 0; i < state.cells.length; i++) {
+                if (state.cells[i] === fromIdx) {
+                    state.cells[i] = toIdx;
+                    moved++;
+                }
+            }
+
+            if (moved > 0) {
+                state.usedCounts.set(from, Math.max(0, (state.usedCounts.get(from) || 0) - moved));
+                state.usedCounts.set(to, (state.usedCounts.get(to) || 0) + moved);
+            }
+
+            el.statusPill.textContent = `替换完成：${from} → ${to}（${moved} 格）`;
+            refreshColorLists();
+            updateMeta();
+            requestDraw();
         }
 
         /**********************
@@ -1466,9 +1833,7 @@
                 let last = 0;
                 t.addEventListener('touchend', (e) => {
                     const now = Date.now();
-                    if (now - last <= 320) {
-                        e.preventDefault();
-                    }
+                    if (now - last <= 320) e.preventDefault();
                     last = now;
                 }, { passive: false });
             });
@@ -1481,8 +1846,6 @@
             document.body.classList.toggle('panelHidden', !!hidden);
             localStorage.setItem('panel_hidden', hidden ? '1' : '0');
             updateFabPanelToggleText();
-
-            // 面板高度变化会影响 canvas 尺寸：重算并尽量适配
             setTimeout(() => {
                 resizeViewCanvas();
                 if (state.isReady) fitToScreen();
@@ -1531,34 +1894,29 @@
          * Palette maps + allowed list
          **********************/
         function rebuildPaletteMaps() {
-            // 1) 确保 paletteList 同步
             if (!state.paletteKey) state.paletteKey = DEFAULT_PALETTE_KEY;
             state.paletteList = getPaletteListByKey(state.paletteKey);
 
-            // 2) code -> hex
             state.codeToHex.clear();
-            for (const p of state.paletteList) { state.codeToHex.set(p.name, p.color); }
+            for (const p of state.paletteList) state.codeToHex.set(p.name, p.color);
 
-            // 3) 计算允许的识别色号（与 sehao.csv / series / name 限制取交集）
             const baseSet = new Set(state.paletteList.map(p => p.name));
 
             const intersect = (A, B) => {
                 const out = new Set();
-                for (const v of A) { if (B.has(v)) out.add(v); }
+                for (const v of A) if (B.has(v)) out.add(v);
                 return out;
             };
 
-            let allowed = null; // null 代表不限制
-
-            // 3.1 sehao.csv 限制（可选）
+            let allowed = null;
             let hasSehao = false;
+
             if (el.limitSehao && el.limitSehao.checked) {
                 hasSehao = true;
                 const list = (state.allowedList && state.allowedList.length) ? state.allowedList : Array.from(baseSet);
                 allowed = new Set(list.map(s => String(s).trim().toUpperCase()).filter(c => baseSet.has(c)));
             }
 
-            // 3.2 series / name 限制（空集合视作“不限制”）
             const mode = (state.filterMode || 'none');
 
             let hasFilter = false;
@@ -1580,7 +1938,6 @@
 
             state.allowedSet = (hasSehao || hasFilter) ? allowed : null;
 
-            // UI
             updatePaletteChip();
             updateFilterPill();
         }
@@ -1606,7 +1963,7 @@
             const W = Math.max(...rows.map(r => r.length));
             if (W < 1 || H < 1) throw new Error('CSV 为空或格式不对');
             if (W > MAX_GRID || H > MAX_GRID) throw new Error(`CSV 网格超过 ${MAX_GRID}×${MAX_GRID}`);
-            for (const r of rows) { while (r.length < W) r.push(''); }
+            for (const r of rows) while (r.length < W) r.push('');
             return { W, H, rows };
         }
 
@@ -1626,6 +1983,7 @@
                     codeCount.set(code, (codeCount.get(code) || 0) + 1);
                 }
             }
+
             const used = [...codeCount.entries()].sort((a, b) => b[1] - a[1]).map(([code, count]) => ({ code, hex: state.codeToHex.get(code), count }));
             state.usedColors = used.map(u => ({ code: u.code, hex: u.hex }));
             state.usedCounts = new Map(used.map(u => [u.code, u.count]));
@@ -1634,6 +1992,7 @@
             state.usedColors.forEach((u, i) => idxMap.set(u.code, i));
             state.cells = new Int16Array(W * H);
             state.cells.fill(-1);
+
             for (let y = 0; y < H; y++) {
                 for (let x = 0; x < W; x++) {
                     const code = (rows[y][x] || '').trim().toUpperCase();
@@ -1854,7 +2213,7 @@
             const newCells = new Int16Array(W * H);
             newCells.fill(-1);
             const newCounts = new Map();
-            for (const u of keep) { newCounts.set(u.code, 0); }
+            for (const u of keep) newCounts.set(u.code, 0);
 
             for (let i = 0; i < cells.length; i++) {
                 const old = cells[i];
@@ -1876,7 +2235,7 @@
             const finalCells = new Int16Array(W * H);
             finalCells.fill(-1);
             const finalCounts = new Map();
-            for (const u of sortedKeep) { finalCounts.set(u.code, u.count); }
+            for (const u of sortedKeep) finalCounts.set(u.code, u.count);
 
             for (let i = 0; i < newCells.length; i++) {
                 const ci = newCells[i];
@@ -1892,11 +2251,8 @@
         function buildFromImage(img) {
             rebuildPaletteMaps();
 
-            // 候选色卡（来自当前 paletteKey）
             let candidates = (state.paletteList || []).map(p => ({ name: p.name, color: p.color, series: p.series }));
-            if (state.allowedSet) {
-                candidates = candidates.filter(p => state.allowedSet.has(p.name));
-            }
+            if (state.allowedSet) candidates = candidates.filter(p => state.allowedSet.has(p.name));
             const cand = candidates.map(p => {
                 const rgb = hexToRgb(p.color);
                 return { code: p.name, hex: p.color, lab: rgbToLab(rgb.r, rgb.g, rgb.b) };
@@ -1917,7 +2273,6 @@
                 el.gridW.value = W; el.gridH.value = H;
             }
 
-            // ✅ 更准确的采样：不把图片直接缩放成 W×H，而是对每个格子的“中心区域”做多点采样
             const iw = img.naturalWidth, ih = img.naturalHeight;
             const src = document.createElement('canvas');
             src.width = iw; src.height = ih;
@@ -1944,13 +2299,10 @@
             const codeGrid = new Array(W * H).fill('');
             const codeCount = new Map();
 
-            // 如果图片本身就是 W×H（像素画每格=1像素），直接读取对应像素（最准确）
             const direct = (iw === W && ih === H);
-
             const cellW = iw / W, cellH = ih / H;
-            const N = 5;               // 每格采样点：N×N
-            const margin = 0.22;       // 采样区域边距比例（避免边缘线条干扰）
-
+            const N = 5;
+            const margin = 0.22;
             function clampI(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
             function sampleCell(x, y) {
@@ -2006,7 +2358,6 @@
                 }
             }
 
-            // used colors -> sort by count desc
             const sorted = [...codeCount.entries()].sort((a, b) => b[1] - a[1]);
             let usedColors = sorted.map(([code, count]) => ({ code, hex: state.codeToHex.get(code) || '000000', count }));
 
@@ -2042,10 +2393,13 @@
             state.history.length = 0; state.activeTarget = null;
             state.activeCode = state.usedColors[0]?.code || null;
 
-            // 进入批量模式时，先清空选区
             state.multiSelected.clear();
             state.multiSelectMode = false;
-            if (el.multiBar) el.multiBar.style.display = 'none';
+            updateMultiBar();
+
+            state.multiEditSelected.clear();
+            state.multiEditMode = false;
+            updateMultiEditBar();
 
             state.isReady = true;
             syncUIAfterBuild();
@@ -2090,6 +2444,7 @@
             refreshEditList();
             refreshBulkList();
             refreshExportList();
+            refreshReplaceLists();
         }
 
         function refreshPickList() {
@@ -2136,7 +2491,8 @@
           </div>
           <div class="ciRight">点击替换</div>
         `;
-                item.addEventListener('click', () => { applyEditToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
+                // ✅ 修复：原来调用了不存在的 applyEditToPickedCell
+                item.addEventListener('click', () => { applyEditColorToPickedCell(p.name, p.color); closeOverlay(el.editOverlay); });
                 el.editList.appendChild(item);
             }
         }
@@ -2149,11 +2505,6 @@
             updateMeta();
             requestDraw();
         }
-
-        /**********************
-         * Next / Prev / Done / Undo
-         **********************/
-        function idxOfCode(code) { return state.usedColors.findIndex(u => u.code === code); }
 
         function remainForCode(code) {
             if (!state.isReady || !code) return 0;
@@ -2224,17 +2575,18 @@
         function nextCell() {
             if (!state.isReady) return;
 
+            // 如果正在批量模式，就不允许“下一格”乱跳
+            if (state.multiSelectMode || state.multiEditMode) {
+                el.statusPill.textContent = '批量模式中：请先退出批量模式';
+                return;
+            }
+
             advanceToNextColorIfNeeded();
 
             let t = findNextCell();
             if (!t) {
-                if (advanceToNextColorIfNeeded()) {
-                    t = findNextCell();
-                }
-                if (!t) {
-                    el.statusPill.textContent = '全部完成 🎉';
-                    return;
-                }
+                if (advanceToNextColorIfNeeded()) t = findNextCell();
+                if (!t) { el.statusPill.textContent = '全部完成 🎉'; return; }
             }
 
             if (state.activeTarget) {
@@ -2247,6 +2599,10 @@
         }
 
         function prevCell() {
+            if (state.multiSelectMode || state.multiEditMode) {
+                el.statusPill.textContent = '批量模式中：请先退出批量模式';
+                return;
+            }
             if (state.history.length === 0) return;
             state.activeTarget = state.history.pop();
             updateMeta();
@@ -2254,6 +2610,10 @@
         }
 
         function markDoneCurrent() {
+            if (state.multiSelectMode || state.multiEditMode) {
+                el.statusPill.textContent = '批量模式中：请先退出批量模式';
+                return;
+            }
             if (!state.activeTarget) return;
             const W = state.gridW;
             const k = state.activeTarget.y * W + state.activeTarget.x;
@@ -2327,11 +2687,8 @@
 
             const remain = remainForCode(state.activeCode);
             el.metaTodo.textContent = `剩余：${remain}`;
-            if (state.activeTarget) {
-                el.posPill.textContent = `(${state.activeTarget.x + 1}, ${state.activeTarget.y + 1})`;
-            } else {
-                el.posPill.textContent = '—';
-            }
+            if (state.activeTarget) el.posPill.textContent = `(${state.activeTarget.x + 1}, ${state.activeTarget.y + 1})`;
+            else el.posPill.textContent = '—';
         }
 
         /**********************
@@ -2353,11 +2710,14 @@
             const x = state.lastPickedCell.x, y = state.lastPickedCell.y;
             const k = y * state.gridW + x;
 
-            let idx = state.usedColors.findIndex(u => u.code === code);
+            const c = String(code || '').trim().toUpperCase();
+            if (!state.codeToHex.has(c)) return alert('该色号不在当前色号表里');
+
+            let idx = state.usedColors.findIndex(u => u.code === c);
             if (idx < 0) {
-                state.usedColors.push({ code, hex });
+                state.usedColors.push({ code: c, hex: String(hex || state.codeToHex.get(c) || '000000') });
                 idx = state.usedColors.length - 1;
-                state.usedCounts.set(code, 0);
+                state.usedCounts.set(c, 0);
             }
 
             const oldIdx = state.cells[k];
@@ -2366,7 +2726,7 @@
                 state.usedCounts.set(oldCode, Math.max(0, (state.usedCounts.get(oldCode) || 0) - 1));
             }
             state.cells[k] = idx;
-            state.usedCounts.set(code, (state.usedCounts.get(code) || 0) + 1);
+            state.usedCounts.set(c, (state.usedCounts.get(c) || 0) + 1);
 
             refreshColorLists();
             updateMeta();
@@ -2491,12 +2851,22 @@
                         ctx.restore();
                     }
 
-                    // ✅ 批量点选高亮
+                    // ✅ 批量点选完成 高亮
                     if (state.multiSelectMode && state.multiSelected.has(k)) {
                         ctx.save();
                         ctx.globalAlpha = 0.95;
                         ctx.lineWidth = 3.2 / z;
                         ctx.strokeStyle = 'rgba(0,180,255,.95)';
+                        ctx.strokeRect(x * cell + 1.2, y * cell + 1.2, cell - 2.4, cell - 2.4);
+                        ctx.restore();
+                    }
+
+                    // ✅ 批量点选改色 高亮（紫色边框）
+                    if (state.multiEditMode && state.multiEditSelected.has(k)) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.95;
+                        ctx.lineWidth = 3.2 / z;
+                        ctx.strokeStyle = 'rgba(210,120,255,.98)';
                         ctx.strokeRect(x * cell + 1.2, y * cell + 1.2, cell - 2.4, cell - 2.4);
                         ctx.restore();
                     }
@@ -2643,14 +3013,22 @@
                     const k = hit.y * state.gridW + hit.x;
 
                     if (state.multiSelectMode) {
-                        // ✅ 批量点选：切换选中/取消选中
                         if (state.multiSelected.has(k)) state.multiSelected.delete(k);
                         else state.multiSelected.add(k);
-
                         state.lastPickedCell = { x: hit.x, y: hit.y };
                         state.activeTarget = { x: hit.x, y: hit.y };
-
                         updateMultiBar();
+                        updateMeta();
+                        requestDraw();
+                        return;
+                    }
+
+                    if (state.multiEditMode) {
+                        if (state.multiEditSelected.has(k)) state.multiEditSelected.delete(k);
+                        else state.multiEditSelected.add(k);
+                        state.lastPickedCell = { x: hit.x, y: hit.y };
+                        state.activeTarget = { x: hit.x, y: hit.y };
+                        updateMultiEditBar();
                         updateMeta();
                         requestDraw();
                         return;
@@ -2735,9 +3113,7 @@
         /**********************
          * Export
          **********************/
-        const exportState = {
-            includeSet: new Set(),
-        };
+        const exportState = { includeSet: new Set() };
 
         function openExportOverlay() {
             if (!state.isReady) { alert('请先导入图纸'); return; }
@@ -2838,9 +3214,7 @@
             const includeSet = exportState.includeSet;
             const rows = calcExportStats(includeSet);
             let csv = 'code,hex,total,done,remain\n';
-            for (const r of rows) {
-                csv += `${r.code},#${r.hex},${r.total},${r.done},${r.remain}\n`;
-            }
+            for (const r of rows) csv += `${r.code},#${r.hex},${r.total},${r.done},${r.remain}\n`;
             downloadText(`mard_stats_${timeStamp()}.csv`, csv, 'text/csv;charset=utf-8');
         }
 
@@ -2890,7 +3264,6 @@
             const mode = (el.exportPngMode && el.exportPngMode.value) ? el.exportPngMode.value : 'grid_only';
 
             const cell = 20;
-
             const stats = (mode === 'grid_codes_legend') ? calcExportStats(includeSet) : [];
             const rowH = 18;
             const legendCols = (mode === 'grid_codes_legend') ? Math.max(1, Math.floor((W * cell) / 220)) : 1;
@@ -2904,11 +3277,9 @@
             const g = out.getContext('2d');
             g.clearRect(0, 0, out.width, out.height);
 
-            // 背景
             g.fillStyle = '#0b0c10';
             g.fillRect(0, 0, out.width, out.height);
 
-            // 画格子画
             for (let y = 0; y < H; y++) {
                 for (let x = 0; x < W; x++) {
                     const k = y * W + x;
@@ -2923,7 +3294,6 @@
                     g.fillRect(x * cell, y * cell, cell, cell);
 
                     if (mode === 'grid_codes_legend' && includeSet.has(code)) {
-                        // 文字颜色：自动黑/白
                         const rgb = hexToRgb(hex);
                         const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b);
                         g.fillStyle = (lum > 145) ? 'rgba(0,0,0,.92)' : 'rgba(255,255,255,.92)';
@@ -2937,7 +3307,6 @@
                 }
             }
 
-            // 网格线（只覆盖格子区域）
             g.strokeStyle = 'rgba(0,0,0,.55)';
             g.lineWidth = 1;
             for (let x = 0; x <= W; x++) {
@@ -2953,7 +3322,6 @@
                 g.stroke();
             }
 
-            // 画统计（下方）
             if (mode === 'grid_codes_legend') {
                 const top = H * cell;
                 g.fillStyle = '#ffffff';
@@ -2975,7 +3343,6 @@
                     const y0 = top + 34 + row * rowH;
 
                     const r = stats[i];
-                    // swatch
                     g.fillStyle = '#' + r.hex;
                     g.fillRect(x0, y0 - 11, 12, 12);
                     g.strokeStyle = 'rgba(0,0,0,.35)';
@@ -2998,11 +3365,32 @@
         /**********************
          * Wire UI events
          **********************/
+        // ====== 新增：收起面板按钮 ======
+        if (el.collapsePanelBtn) {
+            // 初始化按钮文字
+            const initPanelHidden = document.body.classList.contains('panelHidden');
+            el.collapsePanelBtn.textContent = initPanelHidden ? 'X' : 'X';
+
+            // 绑定点击事件
+            el.collapsePanelBtn.addEventListener('click', () => {
+                const isHidden = document.body.classList.contains('panelHidden');
+                setPanelHidden(!isHidden);
+                el.collapsePanelBtn.textContent = isHidden ? 'X' : 'X';
+            });
+        }
+
         el.colorSearch.addEventListener('input', refreshColorLists);
         el.pickSearch.addEventListener('input', refreshPickList);
         el.editSearch.addEventListener('input', refreshEditList);
         el.bulkSearch.addEventListener('input', refreshBulkList);
         el.exportSearch.addEventListener('input', refreshExportList);
+
+        // ✅ 新增：替换 overlay 搜索
+        el.replaceFromSearch.addEventListener('input', refreshReplaceFromList);
+        el.replaceToSearch.addEventListener('input', refreshReplaceToList);
+
+        // ✅ 新增：批量改色 overlay 搜索
+        el.multiEditSearch.addEventListener('input', refreshMultiEditList);
 
         el.showCode.addEventListener('change', () => { state.showCode = el.showCode.checked; requestDraw() });
 
@@ -3058,7 +3446,7 @@
             el.fab.classList.toggle('collapsed', !!collapsed);
             localStorage.setItem('fab_collapsed', collapsed ? '1' : '0');
         }
-        const fabCollapsed = localStorage.getItem('fab_collapsed') === '1';
+        const fabCollapsed = localStorage.getItem('fab_collapsed') === '0';
         setFabCollapsed(fabCollapsed);
 
         el.fabMain.addEventListener('click', () => {
@@ -3086,11 +3474,23 @@
         el.fabUndo.addEventListener('click', undoDone);
         el.fabBulk.addEventListener('click', openBulkOverlay);
         el.fabExport.addEventListener('click', openExportOverlay);
+
+        // ✅ 批量完成
         if (el.fabMulti) el.fabMulti.addEventListener('click', () => {
             if (!state.isReady) return;
             if (state.multiSelectMode) exitMultiSelectMode();
             else enterMultiSelectMode();
         });
+
+        // ✅ 批量改色
+        if (el.fabMultiEdit) el.fabMultiEdit.addEventListener('click', () => {
+            if (!state.isReady) return;
+            if (state.multiEditMode) exitMultiEditMode();
+            else enterMultiEditMode();
+        });
+
+        // ✅ 替换色号
+        if (el.fabReplace) el.fabReplace.addEventListener('click', openReplaceOverlay);
 
         // palette select
         initPaletteSelect();
@@ -3114,9 +3514,12 @@
             rerunFromLastImage('已清空识别限制并重新识别', '已清空识别限制（请重新导入/裁剪后识别）');
         });
         if (el.filterApply) el.filterApply.addEventListener('click', applyFilterFromOverlay);
-        if (el.filterModeNone) el.filterModeNone.addEventListener('change', refreshFilterOverlayUI);
-        if (el.filterModeSeries) el.filterModeSeries.addEventListener('change', refreshFilterOverlayUI);
-        if (el.filterModeName) el.filterModeName.addEventListener('change', refreshFilterOverlayUI);
+
+        // ✅ 修复：切换 radio 只做 UI 显示隐藏，不再重刷整个 overlay
+        if (el.filterModeNone) el.filterModeNone.addEventListener('change', updateFilterModeSectionsFromUI);
+        if (el.filterModeSeries) el.filterModeSeries.addEventListener('change', updateFilterModeSectionsFromUI);
+        if (el.filterModeName) el.filterModeName.addEventListener('change', updateFilterModeSectionsFromUI);
+
         if (el.filterNameSearch) el.filterNameSearch.addEventListener('input', refreshFilterNameList);
         if (el.filterSeriesAll) el.filterSeriesAll.addEventListener('click', () => {
             el.filterSeriesList?.querySelectorAll('input[type="checkbox"][data-series]').forEach(chk => chk.checked = true);
@@ -3135,6 +3538,17 @@
         if (el.multiCancel) el.multiCancel.addEventListener('click', exitMultiSelectMode);
         if (el.multiConfirm) el.multiConfirm.addEventListener('click', confirmMultiDone);
 
+        // ✅ multi edit bar
+        if (el.multiEditCancel) el.multiEditCancel.addEventListener('click', exitMultiEditMode);
+        if (el.multiEditPick) el.multiEditPick.addEventListener('click', openMultiEditOverlay);
+        if (el.multiEditClose) el.multiEditClose.addEventListener('click', () => closeOverlay(el.multiEditOverlay));
+
+        // ✅ replace overlay
+        if (el.replaceClose) el.replaceClose.addEventListener('click', () => closeOverlay(el.replaceOverlay));
+        if (el.replaceApply) el.replaceApply.addEventListener('click', () => {
+            replaceCodeInGrid(replaceState.from, replaceState.to);
+            closeOverlay(el.replaceOverlay);
+        });
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -3143,6 +3557,9 @@
                 closeOverlay(el.editOverlay);
                 closeOverlay(el.bulkOverlay);
                 closeOverlay(el.exportOverlay);
+                closeOverlay(el.filterOverlay);
+                closeOverlay(el.multiEditOverlay);
+                closeOverlay(el.replaceOverlay);
             }
             if (e.key === 'n' || e.key === 'N') nextCell();
             if (e.key === 'p' || e.key === 'P') prevCell();
@@ -3196,17 +3613,13 @@
         /**********************
          * Init
          **********************/
-        // 1) 安装按钮防连点放大
         installNoDoubleTapZoomForButtons();
 
-        // 2) 还原面板隐藏状态
         const panelHidden = localStorage.getItem('panel_hidden') === '1';
         setPanelHidden(panelHidden);
 
-        // 3) 更新 FAB 文案
         updateFabOnlyText();
 
-        // 4) canvas 初始化
         resizeViewCanvas();
         requestDraw();
     </script>
