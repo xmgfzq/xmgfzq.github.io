@@ -605,6 +605,14 @@
                         <label>导入图纸图片（先裁剪）</label>
                         <input id="imgFile" type="file" accept="image/*">
                     </div>
+                    <div>
+                        <label>网格宽 W（≤104）</label>
+                        <input id="gridW" type="number" min="1" max="104" value="52">
+                    </div>
+                    <div>
+                        <label>网格高 H（≤104）</label>
+                        <input id="gridH" type="number" min="1" max="104" value="52">
+                    </div>
                 </div>
 
                 <!-- ✅ 选择色号表（来自 JS） -->
@@ -613,12 +621,21 @@
                         <label>色号表（默认 mard220）</label>
                         <select id="paletteSelect"></select>
                     </div>
+                    <input style="margin-top:20px" id="showCode" type="checkbox" checked>
+                    <div style="display:flex; flex-direction:column; gap:2px; margin-top:20px">
+                        <b style="font-size:13px">格子内显示色号</b>
+                        <span style="font-size:12px; color:var(--muted)">缩放较小时会自动不画字</span>
+                    </div>
                 </div>
 
                 <div class="row" style="align-items:flex-end; gap:10px">
                     <button class="btn small" id="filterBtn" type="button">识别颜色限制</button>
                     <div class="pill" id="filterPill" style="margin:0">全部</div>
                 </div>
+
+                <!-- <div class="toggle">
+                    
+                </div> -->
 
                 <div class="row">
                     <div style="flex:1">
@@ -628,14 +645,7 @@
                 </div>
 
                 <div class="grid2">
-                    <div>
-                        <label>网格宽 W（≤104）</label>
-                        <input id="gridW" type="number" min="1" max="104" value="52">
-                    </div>
-                    <div>
-                        <label>网格高 H（≤104）</label>
-                        <input id="gridH" type="number" min="1" max="104" value="52">
-                    </div>
+
                 </div>
 
                 <div class="toggle">
@@ -681,14 +691,6 @@
                     <button class="btn small" id="bulkBtn" type="button">一键完成色号</button>
                 </div>
 
-                <div class="toggle">
-                    <input id="showCode" type="checkbox" checked>
-                    <div style="display:flex; flex-direction:column; gap:2px">
-                        <b style="font-size:13px">格子内显示色号</b>
-                        <span style="font-size:12px; color:var(--muted)">缩放较小时会自动不画字</span>
-                    </div>
-                </div>
-
                 <div class="hr"></div>
 
                 <div class="grid2">
@@ -727,6 +729,7 @@
                 </div>
                 <div class="meta">
                     <span id="metaGrid">网格：—</span>
+                    <span id="metaTotalColors">总色号数：—</span>
                     <span id="metaColor">当前色：—</span>
                     <span id="metaTodo">剩余：—</span>
                 </div>
@@ -1190,6 +1193,7 @@
             colorList: document.getElementById('colorList'),
 
             metaGrid: document.getElementById('metaGrid'),
+            metaTotalColors: document.getElementById('metaTotalColors'),
             metaColor: document.getElementById('metaColor'),
             metaTodo: document.getElementById('metaTodo'),
 
@@ -1293,7 +1297,36 @@
             return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 0, b: 0 };
         }
         function srgbToLinear(u) { u /= 255; return u <= 0.04045 ? u / 12.92 : Math.pow((u + 0.055) / 1.055, 2.4) }
+        // 新增：RGB校正函数（可调整factor参数）
+        function adjustRgb(r, g, b) {
+            // 1. 对比度校正（factor<1降低对比度，>1提高，建议0.8-0.95）
+            const contrastFactor = 1.0; // 核心调整值，根据效果微调
+            const mid = 128;
+            r = mid + (r - mid) * contrastFactor;
+            g = mid + (g - mid) * contrastFactor;
+            b = mid + (b - mid) * contrastFactor;
+
+            // 2. 饱和度校正（factor<1降低饱和度，建议0.85-0.95）
+            const saturationFactor = 1.0; // 核心调整值
+            const gray = r * 0.299 + g * 0.587 + b * 0.114; // 灰度值
+            r = gray + (r - gray) * saturationFactor;
+            g = gray + (g - gray) * saturationFactor;
+            b = gray + (b - gray) * saturationFactor;
+
+            // 限制值在0-255范围内
+            return {
+                r: Math.max(0, Math.min(255, Math.round(r))),
+                g: Math.max(0, Math.min(255, Math.round(g))),
+                b: Math.max(0, Math.min(255, Math.round(b)))
+            };
+        }
         function rgbToLab(r, g, b) {
+            // 新增：先校正RGB
+            const corrected = adjustRgb(r, g, b);
+            r = corrected.r;
+            g = corrected.g;
+            b = corrected.b;
+
             const R = srgbToLinear(r), G = srgbToLinear(g), B = srgbToLinear(b);
             let x = (R * 0.4124564 + G * 0.3575761 + B * 0.1804375) / 0.95047;
             let y = (R * 0.2126729 + G * 0.7151522 + B * 0.0721750) / 1.00000;
@@ -1304,7 +1337,15 @@
         }
         function deltaE76(l1, l2) {
             const dL = l1.L - l2.L, da = l1.a - l2.a, db = l1.b - l2.b;
-            return dL * dL + da * da + db * db;
+
+            // 调整通道权重：降低a/b通道权重（原值都是1）
+            const weightL = 1.0;  // 亮度权重（保持不变）
+            const weightA = 1.0;  // 红绿通道权重（降低，建议0.7-0.9）
+            const weightB = 1.0;  // 黄蓝通道权重（降低，建议0.7-0.9）
+
+            // 加权后的欧氏距离平方
+            return (dL * dL * weightL) + (da * da * weightA) + (db * db * weightB);
+            // return dL * dL + da * da + db * db;
         }
         function openOverlay(node) { node.style.display = 'flex' }
         function closeOverlay(node) { node.style.display = 'none' }
@@ -1818,12 +1859,49 @@
                 state.usedCounts.set(to, (state.usedCounts.get(to) || 0) + moved);
             }
 
+            // ========== 新增：清理不再使用的色号 ==========
+            // 1. 收集所有仍在使用的色号索引
+            const usedIndexes = new Set();
+            for (let i = 0; i < state.cells.length; i++) {
+                const idx = state.cells[i];
+                if (idx >= 0) {
+                    usedIndexes.add(idx);
+                }
+            }
+
+            // 2. 重新构建 usedColors 和 usedCounts
+            const newUsedColors = [];
+            const newUsedCounts = new Map();
+            const oldToNewIndex = new Map();
+
+            // 遍历原 usedColors，只保留仍在使用的色号
+            for (let i = 0; i < state.usedColors.length; i++) {
+                if (usedIndexes.has(i)) {
+                    const color = state.usedColors[i];
+                    oldToNewIndex.set(i, newUsedColors.length);
+                    newUsedColors.push(color);
+                    newUsedCounts.set(color.code, state.usedCounts.get(color.code) || 0);
+                }
+            }
+
+            // 3. 更新 cells 中的索引映射
+            for (let i = 0; i < state.cells.length; i++) {
+                const oldIdx = state.cells[i];
+                if (oldIdx >= 0) {
+                    state.cells[i] = oldToNewIndex.get(oldIdx);
+                }
+            }
+
+            // 4. 更新状态
+            state.usedColors = newUsedColors;
+            state.usedCounts = newUsedCounts;
+
+            // ========== 原有逻辑 ==========
             el.statusPill.textContent = `替换完成：${from} → ${to}（${moved} 格）`;
             refreshColorLists();
-            updateMeta();
+            updateMeta(); // 这会更新总色号数的显示
             requestDraw();
         }
-
         /**********************
          * ✅ 平板连点按钮放大：仅对按钮阻止 double-tap zoom
          **********************/
@@ -2678,6 +2756,8 @@
         function updateMeta() {
             el.metaGrid.textContent = state.isReady ? `网格：${state.gridW} × ${state.gridH}` : '网格：—';
             el.metaColor.textContent = state.activeCode ? `当前色：${state.activeCode}` : '当前色：—';
+            const totalColors = state.isReady ? state.usedColors.length : 0;
+            el.metaTotalColors.textContent = state.isReady ? `总色号：${totalColors}` : '总色号：—';
 
             if (!state.isReady || !state.activeCode) {
                 el.metaTodo.textContent = '剩余：—';
@@ -2810,8 +2890,8 @@
             ctx.save();
             ctx.translate(view.panX, view.panY);
             ctx.scale(z, z);
-            ctx.lineWidth = 1 / z;
-            ctx.strokeStyle = 'rgba(0,0,0,.35)';
+            ctx.lineWidth = 0.6 / z;
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
 
             for (let y = vy0; y < vy1; y++) {
                 for (let x = vx0; x < vx1; x++) {
@@ -3298,7 +3378,7 @@
                         const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b);
                         g.fillStyle = (lum > 145) ? 'rgba(0,0,0,.92)' : 'rgba(255,255,255,.92)';
                         const len = String(code).length;
-                        const fs = (len <= 2) ? 11 : (len === 3 ? 10 : 9);
+                        const fs = (len <= 2) ? 8 : (len === 3 ? 7 : 6);
                         g.font = `bold ${fs}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
                         g.textAlign = 'center';
                         g.textBaseline = 'middle';
@@ -3307,8 +3387,8 @@
                 }
             }
 
-            g.strokeStyle = 'rgba(0,0,0,.55)';
-            g.lineWidth = 1;
+            g.strokeStyle = 'rgba(0,0,0,0.12)';
+            g.lineWidth = 0.6;
             for (let x = 0; x <= W; x++) {
                 g.beginPath();
                 g.moveTo(x * cell + 0.5, 0);
@@ -3340,7 +3420,7 @@
                     const col = i % legendCols;
                     const row = Math.floor(i / legendCols);
                     const x0 = col * colW + 12;
-                    const y0 = top + 34 + row * rowH;
+                    const y0 = top + 44 + row * rowH;
 
                     const r = stats[i];
                     g.fillStyle = '#' + r.hex;
@@ -3441,12 +3521,13 @@
         el.exportJSON.addEventListener('click', exportAsJSON);
         el.exportPNG.addEventListener('click', exportAsPNG);
 
-        // FAB 折叠/展开（默认展开，可记忆）
+        // FAB 折叠/展开
         function setFabCollapsed(collapsed) {
             el.fab.classList.toggle('collapsed', !!collapsed);
             localStorage.setItem('fab_collapsed', collapsed ? '1' : '0');
         }
-        const fabCollapsed = localStorage.getItem('fab_collapsed') === '0';
+        // const fabCollapsed = localStorage.getItem('fab_collapsed') === '0';
+        const fabCollapsed = 1;
         setFabCollapsed(fabCollapsed);
 
         el.fabMain.addEventListener('click', () => {
@@ -3615,7 +3696,8 @@
          **********************/
         installNoDoubleTapZoomForButtons();
 
-        const panelHidden = localStorage.getItem('panel_hidden') === '1';
+        // 默认显示面板（不隐藏）
+        const panelHidden = localStorage.getItem('panel_hidden') === '1' ? true : false;
         setPanelHidden(panelHidden);
 
         updateFabOnlyText();
